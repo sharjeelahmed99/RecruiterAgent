@@ -52,7 +52,9 @@ export const candidates = pgTable("candidates", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email"),
+  phone: text("phone"),
   notes: text("notes"),
+  resumeUrl: text("resume_url"),
 });
 
 export const insertCandidateSchema = createInsertSchema(candidates);
@@ -117,7 +119,7 @@ export type QuestionFilter = z.infer<typeof questionFilterSchema>;
 export const generateInterviewSchema = z.object({
   title: z.string(),
   candidateId: z.number(),
-  date: z.string(), // ISO date string
+  date: z.date(),
   questionFilters: questionFilterSchema,
 });
 
@@ -128,11 +130,15 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  email: text("email"),
+  role: text("role").default("user"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
+  email: true,
+  role: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

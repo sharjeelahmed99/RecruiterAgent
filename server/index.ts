@@ -1,6 +1,9 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { testConnection } from "./db";
+import { pgStorage } from "./pg-storage";
+import "dotenv/config";
 
 const app = express();
 app.use(express.json());
@@ -37,6 +40,28 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Test database connection before starting the server
+  try {
+    const isConnected = await testConnection();
+    if (isConnected) {
+      log("Database connection successful", "server");
+      // Initialize database if needed
+      if (process.env.DATABASE_URL) {
+        try {
+          log("Initializing database...", "server");
+          await pgStorage.initializeData();
+          log("Database initialization complete", "server");
+        } catch (initError) {
+          log(`Database initialization error: ${initError}`, "server");
+        }
+      }
+    } else {
+      log("WARNING: Failed to connect to the database", "server");
+    }
+  } catch (error) {
+    log(`Database connection error: ${error}`, "server");
+  }
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
