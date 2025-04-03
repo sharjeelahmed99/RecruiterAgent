@@ -305,23 +305,23 @@ export class PgStorage implements IStorage {
 
   async generateInterviewSummary(interviewId: number): Promise<Interview | undefined> {
     try {
-      // Get the interview
-      const interview = await this.getInterview(interviewId);
+      // Get the interview with details to access question evaluation flags
+      const interview = await this.getInterviewWithDetails(interviewId);
       if (!interview) {
         console.error(`Interview with ID ${interviewId} not found`);
         return undefined;
       }
       
       // Get interview questions with scores
-      const interviewQuestions = await this.getInterviewQuestions(interviewId);
+      const questions = interview.questions;
       
-      if (interviewQuestions.length === 0) {
+      if (questions.length === 0) {
         console.error(`No questions found for interview with ID ${interviewId}`);
         return interview; // Return original interview without changes
       }
       
-      // Calculate average scores
-      const scoredQuestions = interviewQuestions.filter(q => q.score !== null);
+      // Calculate average scores by skill type
+      const scoredQuestions = questions.filter(q => q.score !== null);
       const totalQuestions = scoredQuestions.length;
       
       if (totalQuestions === 0) {
@@ -329,28 +329,49 @@ export class PgStorage implements IStorage {
         return interview; // Return original interview without changes
       }
       
-      const technicalScoreSum = scoredQuestions.reduce((sum, q) => sum + (q.score || 0), 0);
-      // Round to nearest integer instead of using decimal values
-      const technicalScore = Math.round(technicalScoreSum / totalQuestions);
+      // Get questions by skill type
+      const technicalQuestions = scoredQuestions.filter(
+        q => q.question.evaluatesTechnical
+      );
+      const problemSolvingQuestions = scoredQuestions.filter(
+        q => q.question.evaluatesProblemSolving
+      );
+      const communicationQuestions = scoredQuestions.filter(
+        q => q.question.evaluatesCommunication
+      );
       
-      // Use technical score for other metrics as a placeholder
-      // In a real app, these would be calculated separately
-      const problemSolvingScore = technicalScore;
-      const communicationScore = technicalScore;
+      // Calculate separate scores for each skill
+      const technicalScore = technicalQuestions.length > 0
+        ? Math.round(technicalQuestions.reduce((sum, q) => sum + (q.score || 0), 0) / technicalQuestions.length)
+        : null;
+        
+      const problemSolvingScore = problemSolvingQuestions.length > 0
+        ? Math.round(problemSolvingQuestions.reduce((sum, q) => sum + (q.score || 0), 0) / problemSolvingQuestions.length)
+        : null;
+        
+      const communicationScore = communicationQuestions.length > 0
+        ? Math.round(communicationQuestions.reduce((sum, q) => sum + (q.score || 0), 0) / communicationQuestions.length)
+        : null;
       
-      // Overall score is the average of the three scores, rounded to an integer
-      const overallScore = Math.round((technicalScore + problemSolvingScore + communicationScore) / 3);
+      // Calculate overall score using available skill scores
+      const validScores = [technicalScore, problemSolvingScore, communicationScore].filter(score => score !== null) as number[];
+      const overallScore = validScores.length > 0
+        ? Math.round(validScores.reduce((sum, score) => sum + score, 0) / validScores.length)
+        : null;
       
       // Generate a recommendation based on the overall score
-      let recommendation: string;
-      if (overallScore >= 5) {
-        recommendation = "strong_hire";
-      } else if (overallScore >= 4) {
-        recommendation = "hire";
-      } else if (overallScore >= 3) {
-        recommendation = "consider";
-      } else {
-        recommendation = "pass";
+      let recommendation: string | null = null;
+      
+      if (overallScore !== null) {
+        if (overallScore >= 5) {
+          recommendation = "strong_hire";
+        } else if (overallScore >= 4) {
+          recommendation = "hire";
+        } else if (overallScore >= 3) {
+          recommendation = "consider";
+        } else {
+          recommendation = "pass";
+        }
       }
       
       // Update the interview with the calculated scores and recommendation

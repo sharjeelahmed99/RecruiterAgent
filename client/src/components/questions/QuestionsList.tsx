@@ -14,6 +14,7 @@ interface QuestionListProps {
   isLoading?: boolean;
   showAnswers?: boolean;
   showScoreTypes?: boolean;
+  isPreview?: boolean;
 }
 
 export default function QuestionsList({ 
@@ -23,7 +24,8 @@ export default function QuestionsList({
   isGenerating = false,
   isLoading = false,
   showAnswers = false,
-  showScoreTypes = false
+  showScoreTypes = false,
+  isPreview = false
 }: QuestionListProps) {
   const [activeTab, setActiveTab] = useState("current");
   const { toast } = useToast();
@@ -64,6 +66,57 @@ export default function QuestionsList({
 
   // Helper function to determine if this is an interview question list or regular question list
   const isInterviewQuestionsList = questions.length > 0 && 'question' in questions[0];
+
+  // If we're in preview mode, show a simplified view without tabs
+  if (isPreview) {
+    return (
+      <div className="space-y-4 pb-10">
+        <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6">
+          <div className="flex">
+            <div className="ml-3">
+              <p className="text-sm text-amber-700">
+                These are preview questions only. Start the interview to score and evaluate the candidate.
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        {questions.map((q) => (
+          <QuestionCard
+            key={q.id}
+            questionId={q.id}
+            title={q.title}
+            content={q.content}
+            answer={q.answer}
+            technology={{ id: q.technologyId, name: q.technology?.name || "Unknown" }}
+            experienceLevel={{ id: q.experienceLevelId, name: q.experienceLevel?.name || "Unknown" }}
+            questionType={{ id: q.questionTypeId, name: q.questionType?.name || "Unknown" }}
+            evaluatesTechnical={q.evaluatesTechnical}
+            evaluatesProblemSolving={q.evaluatesProblemSolving}
+            evaluatesCommunication={q.evaluatesCommunication}
+            isCustom={q.isCustom}
+            showAnswers={true}
+            showScoreTypes={true}
+          />
+        ))}
+        
+        {/* Add More Questions Button */}
+        {onGenerateMore && (
+          <div className="mt-4 text-center">
+            <Button
+              variant="outline"
+              onClick={onGenerateMore}
+              disabled={isGenerating}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <PlusIcon className="-ml-1 mr-2 h-5 w-5 text-gray-400" />
+              Generate More Questions
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div>

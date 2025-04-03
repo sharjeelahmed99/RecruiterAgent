@@ -27,8 +27,8 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
       icon: HomeIcon,
     },
     {
-      name: "Generate Questions",
-      path: "/generate-questions",
+      name: "Start an Interview",
+      path: "/start-interview",
       icon: HelpCircleIcon,
     },
     {

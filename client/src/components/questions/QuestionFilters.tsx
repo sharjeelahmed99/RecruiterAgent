@@ -3,18 +3,34 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, PlayIcon } from "lucide-react";
 import { QuestionFilter } from "@shared/schema";
 
 interface QuestionFiltersProps {
   onGenerateQuestions: (filters: QuestionFilter) => void;
+  onStartInterview?: (filters: QuestionFilter) => void;
   isGenerating?: boolean;
+  isPending?: boolean;
+  disableStartButton?: boolean;
+  showStartButton?: boolean;
+  candidates?: any[];
+  onCandidateChange?: (candidateId: number) => void;
 }
 
-export default function QuestionFilters({ onGenerateQuestions, isGenerating = false }: QuestionFiltersProps) {
+export default function QuestionFilters({ 
+  onGenerateQuestions, 
+  onStartInterview, 
+  isGenerating = false, 
+  isPending = false,
+  disableStartButton = false,
+  showStartButton = false,
+  candidates = [],
+  onCandidateChange
+}: QuestionFiltersProps) {
   const [experienceLevelId, setExperienceLevelId] = useState<number | undefined>(undefined);
   const [technologyId, setTechnologyId] = useState<number | undefined>(undefined);
   const [questionTypeId, setQuestionTypeId] = useState<number | undefined>(undefined);
+  const [candidateId, setCandidateId] = useState<number | undefined>(undefined);
   const [count, setCount] = useState<number>(3);
 
   const { data: experienceLevels, isLoading: isLoadingExperienceLevels } = useQuery<any[]>({
@@ -38,19 +54,61 @@ export default function QuestionFilters({ onGenerateQuestions, isGenerating = fa
       setExperienceLevelId(experienceLevels[1].id); // Default to intermediate
     }
   }, [technologies, experienceLevels, technologyId, experienceLevelId]);
+  
+  // Notify parent component when candidate changes
+  useEffect(() => {
+    if (candidateId && onCandidateChange) {
+      onCandidateChange(candidateId);
+    }
+  }, [candidateId, onCandidateChange]);
 
-  const handleGenerateQuestions = () => {
-    onGenerateQuestions({
+  const getFilters = (): QuestionFilter => {
+    return {
       experienceLevelId,
       technologyId,
       questionTypeId,
       count
-    });
+    };
+  };
+  
+  const handleGenerateQuestions = () => {
+    onGenerateQuestions(getFilters());
+  };
+  
+  const handleStartInterview = () => {
+    if (onStartInterview) {
+      onStartInterview(getFilters());
+    }
   };
 
   return (
     <div className="bg-white shadow rounded-lg p-6 mb-6">
       <h3 className="text-lg font-medium text-gray-900 mb-4">Question Filters</h3>
+      
+      {/* Show candidate selector only when candidates are available */}
+      {showStartButton && candidates.length > 0 && (
+        <div className="mb-6">
+          <Label htmlFor="candidate" className="block text-sm font-medium text-gray-700 mb-1">
+            Select Candidate
+          </Label>
+          <Select
+            value={candidateId?.toString()}
+            onValueChange={(value) => setCandidateId(parseInt(value))}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select candidate for interview" />
+            </SelectTrigger>
+            <SelectContent>
+              {candidates.map((candidate) => (
+                <SelectItem key={candidate.id} value={candidate.id.toString()}>
+                  {candidate.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+      
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Experience Level */}
         <div>
@@ -123,14 +181,24 @@ export default function QuestionFilters({ onGenerateQuestions, isGenerating = fa
         </div>
       </div>
 
-      <div className="mt-5 flex justify-end">
+      <div className="mt-5 flex justify-end space-x-3">
+        {showStartButton && (
+          <Button
+            disabled={isPending || !technologyId || !experienceLevelId || disableStartButton}
+            onClick={handleStartInterview}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+          >
+            <PlayIcon className="-ml-1 mr-2 h-5 w-5" />
+            Start Interview
+          </Button>
+        )}
         <Button
           disabled={isGenerating || !technologyId || !experienceLevelId}
           onClick={handleGenerateQuestions}
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
           <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
-          Generate Questions
+          {showStartButton ? 'Preview Questions' : 'Generate Questions'}
         </Button>
       </div>
     </div>

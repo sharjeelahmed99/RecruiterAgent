@@ -538,35 +538,76 @@ export class MemStorage implements IStorage {
   }
 
   async generateInterviewSummary(interviewId: number): Promise<Interview | undefined> {
-    const interview = this.interviews.get(interviewId);
+    // Get the interview with details
+    const interview = await this.getInterviewWithDetails(interviewId);
     if (!interview) return undefined;
-
-    const interviewQuestions = Array.from(this.interviewQuestions.values())
-      .filter(iq => iq.interviewId === interviewId);
-
-    if (interviewQuestions.length === 0) return interview;
-
-    // Calculate average scores
-    const scores = interviewQuestions
-      .filter(iq => iq.score !== null && iq.score !== undefined)
-      .map(iq => iq.score as number);
-
-    if (scores.length === 0) return interview;
-
-    const sum = scores.reduce((acc, score) => acc + score, 0);
-    const average = Math.round((sum / scores.length) * 10) / 10; // Round to 1 decimal place
-
-    // Update interview with scores
+    
+    // Process the interview questions with their related questions
+    const questions = interview.questions;
+    
+    if (questions.length === 0) return interview;
+    
+    // Calculate average scores by skill type
+    const scoredQuestions = questions.filter(q => q.score !== null);
+    
+    if (scoredQuestions.length === 0) return interview;
+    
+    // Get questions by skill type
+    const technicalQuestions = scoredQuestions.filter(
+      q => q.question.evaluatesTechnical
+    );
+    const problemSolvingQuestions = scoredQuestions.filter(
+      q => q.question.evaluatesProblemSolving
+    );
+    const communicationQuestions = scoredQuestions.filter(
+      q => q.question.evaluatesCommunication
+    );
+    
+    // Calculate separate scores for each skill
+    const technicalScore = technicalQuestions.length > 0
+      ? Math.round(technicalQuestions.reduce((sum, q) => sum + (q.score || 0), 0) / technicalQuestions.length)
+      : null;
+      
+    const problemSolvingScore = problemSolvingQuestions.length > 0
+      ? Math.round(problemSolvingQuestions.reduce((sum, q) => sum + (q.score || 0), 0) / problemSolvingQuestions.length)
+      : null;
+      
+    const communicationScore = communicationQuestions.length > 0
+      ? Math.round(communicationQuestions.reduce((sum, q) => sum + (q.score || 0), 0) / communicationQuestions.length)
+      : null;
+    
+    // Calculate overall score using available skill scores
+    const validScores = [technicalScore, problemSolvingScore, communicationScore].filter(score => score !== null) as number[];
+    const overallScore = validScores.length > 0
+      ? Math.round(validScores.reduce((sum, score) => sum + score, 0) / validScores.length)
+      : null;
+    
+    // Generate a recommendation based on the overall score
+    let recommendation: string | null = null;
+    
+    if (overallScore !== null) {
+      if (overallScore >= 5) {
+        recommendation = "strong_hire";
+      } else if (overallScore >= 4) {
+        recommendation = "hire";
+      } else if (overallScore >= 3) {
+        recommendation = "consider";
+      } else {
+        recommendation = "pass";
+      }
+    }
+    
+    // Update interview with calculated scores and recommendation
     const updatedInterview: Interview = {
       ...interview,
-      overallScore: average,
-      // For simplicity, use the same average for all scores
-      // In a real app, these would be calculated separately
-      technicalScore: average,
-      problemSolvingScore: average,
-      communicationScore: average
+      technicalScore,
+      problemSolvingScore,
+      communicationScore,
+      overallScore,
+      recommendation,
+      status: "completed"
     };
-
+    
     this.interviews.set(interviewId, updatedInterview);
     return updatedInterview;
   }
