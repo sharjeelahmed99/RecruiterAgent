@@ -95,6 +95,7 @@ export const interviewQuestions = pgTable("interview_questions", {
   questionId: integer("question_id").notNull(),
   score: integer("score"),
   notes: text("notes"),
+  skipped: boolean("skipped").default(false),
 });
 
 export const insertInterviewQuestionSchema = createInsertSchema(interviewQuestions);

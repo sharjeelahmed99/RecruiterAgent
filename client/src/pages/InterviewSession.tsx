@@ -93,10 +93,39 @@ export default function InterviewSession() {
       });
     },
   });
+  
+  const { mutate: toggleSkipQuestion, isPending: isTogglingSkip } = useMutation({
+    mutationFn: async ({ id, skipped }: { id: number, skipped: boolean }) => {
+      const response = await apiRequest("PUT", `/api/interview-questions/${id}`, { skipped });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/interviews/${interviewId}/details`] });
+      toast({
+        title: data.skipped ? "Question skipped" : "Question restored",
+        description: data.skipped ? 
+          "This question will not be included in the final report." : 
+          "This question will now be included in the final report.",
+        variant: "default",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error updating question",
+        description: error.message || "Failed to update question status. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleScoreChange = (id: number, score: number, notes: string) => {
     console.log(`Updating score for question ${id} to ${score} with notes: ${notes}`);
     updateQuestionScore({ id, score, notes });
+  };
+  
+  const handleSkipToggle = (id: number, skipped: boolean) => {
+    console.log(`${skipped ? 'Skipping' : 'Restoring'} question ${id}`);
+    toggleSkipQuestion({ id, skipped });
   };
 
   const handleGenerateReport = () => {
@@ -159,6 +188,7 @@ export default function InterviewSession() {
         <QuestionsList
           questions={interview.questions}
           onScoreChange={handleScoreChange}
+          onSkipToggle={handleSkipToggle}
           onGenerateMore={() => handleGenerateMoreQuestions({
             count: 3
           })}

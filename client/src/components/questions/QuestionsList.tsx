@@ -10,6 +10,7 @@ interface QuestionListProps {
   questions: any[];
   onGenerateMore?: () => void;
   onScoreChange?: (id: number, score: number, notes: string) => void;
+  onSkipToggle?: (id: number, skipped: boolean) => void;
   isGenerating?: boolean;
   isLoading?: boolean;
   showAnswers?: boolean;
@@ -21,6 +22,7 @@ export default function QuestionsList({
   questions, 
   onGenerateMore, 
   onScoreChange,
+  onSkipToggle,
   isGenerating = false,
   isLoading = false,
   showAnswers = false,
@@ -161,7 +163,9 @@ export default function QuestionsList({
                   questionType={q.question.questionType}
                   score={q.score}
                   notes={q.notes}
+                  skipped={q.skipped}
                   onScoreChange={onScoreChange}
+                  onSkipToggle={onSkipToggle}
                   evaluatesTechnical={q.question.evaluatesTechnical}
                   evaluatesProblemSolving={q.question.evaluatesProblemSolving}
                   evaluatesCommunication={q.question.evaluatesCommunication}

@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronDownIcon, ChevronUpIcon, BrainIcon, LightbulbIcon, MessagesSquareIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronUpIcon, BrainIcon, LightbulbIcon, MessagesSquareIcon, XCircleIcon, SkipForwardIcon, RotateCcwIcon } from "lucide-react";
 import RatingScale from "@/components/ui/RatingScale";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -27,7 +28,9 @@ interface QuestionCardProps {
   };
   score?: number | null;
   notes?: string;
+  skipped?: boolean;
   onScoreChange?: (id: number, score: number, notes: string) => void;
+  onSkipToggle?: (id: number, skipped: boolean) => void;
   evaluatesTechnical?: boolean;
   evaluatesProblemSolving?: boolean;
   evaluatesCommunication?: boolean;
@@ -47,7 +50,9 @@ export default function QuestionCard({
   questionType,
   score = null,
   notes = "",
+  skipped = false,
   onScoreChange,
+  onSkipToggle,
   evaluatesTechnical = false,
   evaluatesProblemSolving = false,
   evaluatesCommunication = false,
@@ -57,20 +62,26 @@ export default function QuestionCard({
 }: QuestionCardProps) {
   const [showAnswer, setShowAnswer] = useState(showAnswers);
   const [noteText, setNoteText] = useState(notes || "");
+  const [isSkipped, setIsSkipped] = useState(skipped);
   
   const { mutate, isPending } = useMutation({
-    mutationFn: async ({ score, notes }: { score: number; notes: string }) => {
+    mutationFn: async ({ score, notes, skipped }: { score: number; notes: string; skipped?: boolean }) => {
       if (!interviewQuestionId) return null;
       return apiRequest(
         "PUT", 
         `/api/interview-questions/${interviewQuestionId}`, 
-        { score, notes }
+        { score, notes, ...(skipped !== undefined ? { skipped } : {}) }
       );
     },
     onSuccess: () => {
       // Handle success if needed
     },
   });
+  
+  // Update state when props change
+  useEffect(() => {
+    setIsSkipped(skipped);
+  }, [skipped]);
 
   const handleScoreChange = (newScore: number) => {
     if (onScoreChange && interviewQuestionId) {
@@ -94,6 +105,16 @@ export default function QuestionCard({
   const toggleAnswer = () => {
     setShowAnswer(!showAnswer);
   };
+  
+  const toggleSkipped = () => {
+    const newSkipped = !isSkipped;
+    setIsSkipped(newSkipped);
+    
+    if (onSkipToggle && interviewQuestionId) {
+      onSkipToggle(interviewQuestionId, newSkipped);
+      mutate({ score: score || 0, notes: noteText, skipped: newSkipped });
+    }
+  };
 
   const formatExperienceLevel = (level: string) => {
     return level.charAt(0).toUpperCase() + level.slice(1);
@@ -104,10 +125,17 @@ export default function QuestionCard({
   };
 
   return (
-    <Card className="bg-white shadow rounded-lg transition-all duration-200 hover:shadow-md">
+    <Card className={`bg-white shadow rounded-lg transition-all duration-200 hover:shadow-md ${isSkipped ? 'opacity-75' : ''}`}>
       <CardContent className="p-6">
         <div className="flex justify-between items-start">
-          <h3 className="text-lg font-medium text-gray-900">{title}</h3>
+          <h3 className="text-lg font-medium text-gray-900">
+            {isSkipped && (
+              <Badge variant="outline" className="bg-gray-100 text-gray-800 mr-2">
+                Skipped
+              </Badge>
+            )}
+            {title}
+          </h3>
           <div className="flex gap-2">
             {isCustom && (
               <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-200">
@@ -180,7 +208,31 @@ export default function QuestionCard({
         {/* Scoring Section */}
         {onScoreChange && (
           <div className="mt-6 border-t border-gray-200 pt-4">
-            <h4 className="text-sm font-medium text-gray-900">Rate Candidate's Response:</h4>
+            <div className="flex justify-between items-center">
+              <h4 className="text-sm font-medium text-gray-900">Rate Candidate's Response:</h4>
+              
+              {onSkipToggle && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={toggleSkipped}
+                  className={isSkipped ? "text-red-600 border-red-200 hover:bg-red-50" : "text-gray-600 hover:bg-gray-50"}
+                >
+                  {isSkipped ? (
+                    <>
+                      <RotateCcwIcon className="h-4 w-4 mr-1" />
+                      Unskip
+                    </>
+                  ) : (
+                    <>
+                      <SkipForwardIcon className="h-4 w-4 mr-1" />
+                      Skip Question
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+            
             <div className="mt-2 flex items-center">
               <div className="flex items-center">
                 <RatingScale value={score} onChange={handleScoreChange} />
