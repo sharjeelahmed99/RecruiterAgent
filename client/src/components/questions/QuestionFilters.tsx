@@ -15,6 +15,7 @@ interface QuestionFiltersProps {
   showStartButton?: boolean;
   candidates?: any[];
   onCandidateChange?: (candidateName: string) => void;
+  onTitleChange?: (title: string) => void;
 }
 
 export default function QuestionFilters({ 
@@ -25,12 +26,14 @@ export default function QuestionFilters({
   disableStartButton = false,
   showStartButton = false,
   candidates = [],
-  onCandidateChange
+  onCandidateChange,
+  onTitleChange
 }: QuestionFiltersProps) {
   const [experienceLevelId, setExperienceLevelId] = useState<number | undefined>(undefined);
   const [technologyId, setTechnologyId] = useState<number | undefined>(undefined);
   const [questionTypeId, setQuestionTypeId] = useState<number | undefined>(undefined);
   const [candidateName, setCandidateName] = useState<string>('');
+  const [interviewTitle, setInterviewTitle] = useState<string>('');
   const [count, setCount] = useState<number>(3);
 
   const { data: experienceLevels, isLoading: isLoadingExperienceLevels } = useQuery<any[]>({
@@ -61,6 +64,13 @@ export default function QuestionFilters({
       onCandidateChange(candidateName);
     }
   }, [candidateName, onCandidateChange]);
+  
+  // Notify parent component when interview title changes
+  useEffect(() => {
+    if (onTitleChange) {
+      onTitleChange(interviewTitle);
+    }
+  }, [interviewTitle, onTitleChange]);
 
   const getFilters = (): QuestionFilter => {
     return {
@@ -85,20 +95,35 @@ export default function QuestionFilters({
     <div className="bg-white shadow rounded-lg p-6 mb-6">
       <h3 className="text-lg font-medium text-gray-900 mb-4">Question Filters</h3>
       
-      {/* Show candidate name input field when interviews are being started */}
+      {/* Show candidate name and interview title fields when interviews are being started */}
       {showStartButton && (
-        <div className="mb-6">
-          <Label htmlFor="candidate" className="block text-sm font-medium text-gray-700 mb-1">
-            Candidate Name
-          </Label>
-          <input
-            type="text"
-            id="candidate"
-            value={candidateName}
-            onChange={(e) => setCandidateName(e.target.value)}
-            placeholder="Enter candidate name"
-            className="w-full rounded-md border border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <Label htmlFor="candidate" className="block text-sm font-medium text-gray-700 mb-1">
+              Candidate Name
+            </Label>
+            <input
+              type="text"
+              id="candidate"
+              value={candidateName}
+              onChange={(e) => setCandidateName(e.target.value)}
+              placeholder="Enter candidate name"
+              className="w-full rounded-md border border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <Label htmlFor="interviewTitle" className="block text-sm font-medium text-gray-700 mb-1">
+              Interview Title
+            </Label>
+            <input
+              type="text"
+              id="interviewTitle"
+              value={interviewTitle}
+              onChange={(e) => setInterviewTitle(e.target.value)}
+              placeholder="E.g., React Developer Interview (optional)"
+              className="w-full rounded-md border border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500"
+            />
+          </div>
         </div>
       )}
       

@@ -14,6 +14,7 @@ export default function StartAnInterview() {
   const [previewQuestions, setPreviewQuestions] = useState<Question[]>([]);
   const [questionFilters, setQuestionFilters] = useState<QuestionFilter | null>(null);
   const [candidateName, setCandidateName] = useState<string>('');
+  const [interviewTitle, setInterviewTitle] = useState<string>('');
   const [showPreview, setShowPreview] = useState(false);
 
   // Query for candidates
@@ -66,7 +67,11 @@ export default function StartAnInterview() {
   // Mutation for starting an interview
   const { mutate: startInterviewWithCandidate, isPending: isStartingInterview } = useMutation({
     mutationFn: async ({ candidateId, filter }: { candidateId: number; filter: QuestionFilter }) => {
-      const title = `${candidateName} - ${new Date().toLocaleDateString()} Interview`;
+      // Use custom title if provided, otherwise generate one based on candidate name
+      const title = interviewTitle.trim() 
+        ? interviewTitle 
+        : `${candidateName} - ${new Date().toLocaleDateString()} Interview`;
+      
       const response = await apiRequest('POST', '/api/interviews/generate', {
         title,
         candidateId,
@@ -117,6 +122,10 @@ export default function StartAnInterview() {
   const handleCandidateChange = (name: string) => {
     setCandidateName(name);
   };
+  
+  const handleTitleChange = (title: string) => {
+    setInterviewTitle(title);
+  };
 
   return (
     <div className="container mx-auto py-8">
@@ -135,6 +144,7 @@ export default function StartAnInterview() {
             isPending={isStartingInterview}
             candidates={candidates || []}
             onCandidateChange={handleCandidateChange}
+            onTitleChange={handleTitleChange}
             showStartButton={true}
             disableStartButton={!candidateName.trim()}
           />
