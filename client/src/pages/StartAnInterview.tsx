@@ -13,7 +13,7 @@ export default function StartAnInterview() {
   const { toast } = useToast();
   const [previewQuestions, setPreviewQuestions] = useState<Question[]>([]);
   const [questionFilters, setQuestionFilters] = useState<QuestionFilter | null>(null);
-  const [selectedCandidate, setSelectedCandidate] = useState<number | null>(null);
+  const [candidateName, setCandidateName] = useState<string>('');
   const [showPreview, setShowPreview] = useState(false);
 
   // Query for candidates
@@ -40,12 +40,38 @@ export default function StartAnInterview() {
     },
   });
 
+  // Mutation for creating a candidate
+  const { mutate: createNewCandidate, isPending: isCreatingCandidate } = useMutation({
+    mutationFn: async (name: string) => {
+      const response = await apiRequest('POST', '/api/candidates', {
+        name,
+        email: '',
+        phone: '',
+        notes: 'Created during interview setup',
+        resumeUrl: ''
+      });
+      return response.json();
+    },
+    // We handle onSuccess in the specific call sites
+    
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to create candidate. Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Mutation for starting an interview
-  const { mutate: startInterview, isPending: isStartingInterview } = useMutation({
+  const { mutate: startInterviewWithCandidate, isPending: isStartingInterview } = useMutation({
     mutationFn: async ({ candidateId, filter }: { candidateId: number; filter: QuestionFilter }) => {
-      const response = await apiRequest('POST', '/api/interviews', {
+      const title = `${candidateName} - ${new Date().toLocaleDateString()} Interview`;
+      const response = await apiRequest('POST', '/api/interviews/generate', {
+        title,
         candidateId,
-        filter,
+        date: new Date().toISOString(), // Send as ISO string for proper date parsing
+        questionFilters: filter
       });
       return response.json();
     },
@@ -67,23 +93,29 @@ export default function StartAnInterview() {
   };
 
   const handleStartInterview = (filter: QuestionFilter) => {
-    // If there's a selected candidate and filters, create an interview
-    if (selectedCandidate) {
-      startInterview({
-        candidateId: selectedCandidate,
-        filter,
+    // If there's a candidate name and filters, create an interview
+    if (candidateName.trim()) {
+      // Create a new candidate with the provided name first and pass the filter as context
+      createNewCandidate(candidateName, { 
+        onSuccess: (candidate) => {
+          // After creating the candidate, start the interview
+          startInterviewWithCandidate({
+            candidateId: candidate.id,
+            filter
+          });
+        }
       });
     } else {
       toast({
-        title: 'Select a candidate',
-        description: 'Please select a candidate before starting the interview.',
+        title: 'Enter candidate name',
+        description: 'Please enter a candidate name before starting the interview.',
         variant: 'default',
       });
     }
   };
 
-  const handleCandidateChange = (candidateId: number) => {
-    setSelectedCandidate(candidateId);
+  const handleCandidateChange = (name: string) => {
+    setCandidateName(name);
   };
 
   return (
@@ -104,7 +136,7 @@ export default function StartAnInterview() {
             candidates={candidates || []}
             onCandidateChange={handleCandidateChange}
             showStartButton={true}
-            disableStartButton={!selectedCandidate}
+            disableStartButton={!candidateName.trim()}
           />
         </div>
 
@@ -114,14 +146,18 @@ export default function StartAnInterview() {
               <h2 className="text-xl font-semibold text-gray-800">Preview Questions</h2>
               <Button
                 onClick={() => {
-                  if (questionFilters && selectedCandidate) {
-                    startInterview({
-                      candidateId: selectedCandidate,
-                      filter: questionFilters,
+                  if (questionFilters && candidateName.trim()) {
+                    createNewCandidate(candidateName, { 
+                      onSuccess: (candidate) => {
+                        startInterviewWithCandidate({
+                          candidateId: candidate.id,
+                          filter: questionFilters
+                        });
+                      }
                     });
                   }
                 }}
-                disabled={isStartingInterview || !selectedCandidate}
+                disabled={isStartingInterview || !candidateName.trim()}
               >
                 {isStartingInterview ? 'Starting...' : 'Start Interview with These Questions'}
               </Button>

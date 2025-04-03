@@ -308,7 +308,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // POST /api/interviews/generate - Generate a new interview with questions
   app.post("/api/interviews/generate", async (req, res) => {
     try {
-      const generateData = generateInterviewSchema.parse(req.body);
+      // Parse date before validation
+      let requestData = { ...req.body };
+      if (requestData.date && typeof requestData.date === 'string') {
+        requestData.date = new Date(requestData.date);
+      }
+      
+      const generateData = generateInterviewSchema.parse(requestData);
       
       // 1. Create the interview
       const interviewData = {
