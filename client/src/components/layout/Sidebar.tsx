@@ -65,7 +65,7 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
               <XIcon className="h-6 w-6" />
             </button>
           )}
-          <h1 className="text-white text-xl font-bold">InterviewPro</h1>
+          <h1 className="text-white text-xl font-bold">Interview Assistant</h1>
         </div>
         <div className="flex-1 flex flex-col overflow-y-auto">
           <nav className="flex-1 px-2 py-4 bg-indigo-800 space-y-1">
