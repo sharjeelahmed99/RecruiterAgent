@@ -76,7 +76,7 @@ export default function GenerateQuestions() {
       const createResponse = await apiRequest("POST", "/api/interviews", {
         title,
         candidateId,
-        date: new Date().toISOString(),
+        date: new Date(),
         status: "in_progress",
         notes: ""
       });
