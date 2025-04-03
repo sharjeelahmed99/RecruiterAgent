@@ -34,7 +34,16 @@ export default function InterviewSummary({
 
   const { mutate: saveInterview, isPending } = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("PUT", `/api/interviews/${interviewId}`, data);
+      const response = await apiRequest("PUT", `/api/interviews/${interviewId}`, {
+        notes: data.notes,
+        recommendation: data.recommendation
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to save interview");
+      }
+      
       return await response.json();
     },
     onSuccess: (data) => {
@@ -59,10 +68,17 @@ export default function InterviewSummary({
     mutationFn: async (data: any) => {
       // First save the interview data
       const updateResponse = await apiRequest("PUT", `/api/interviews/${interviewId}`, { 
-        ...data,
+        notes: data.notes,
+        recommendation: data.recommendation,
         status: "completed" 
       });
-      await updateResponse.json();
+      
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json();
+        throw new Error(errorData.message || "Failed to submit evaluation");
+      }
+      
+      const updatedInterview = await updateResponse.json();
       
       // Then return the complete interview
       const getResponse = await apiRequest("GET", `/api/interviews/${interviewId}`);

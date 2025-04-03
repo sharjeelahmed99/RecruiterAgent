@@ -137,7 +137,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const filter = questionFilterSchema.parse(req.body);
       const questions = await storage.getRandomQuestions(filter);
-      res.json(questions);
+      
+      // Additional check to ensure uniqueness by ID
+      const uniqueQuestionIds = new Set();
+      const uniqueQuestions = [];
+      
+      for (const question of questions) {
+        if (!uniqueQuestionIds.has(question.id)) {
+          uniqueQuestionIds.add(question.id);
+          uniqueQuestions.push(question);
+        }
+      }
+      
+      res.json(uniqueQuestions);
     } catch (err) {
       handleZodError(err, res);
     }
@@ -340,7 +352,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid ID format" });
       }
 
-      const interviewData = insertInterviewSchema.parse(req.body);
+      // Use partial schema for updates instead of requiring all fields
+      const interviewData = insertInterviewSchema.partial().parse(req.body);
+      
+      // Handle date conversion explicitly if present
+      if (interviewData.date && !(interviewData.date instanceof Date)) {
+        try {
+          interviewData.date = new Date(interviewData.date);
+        } catch (dateErr) {
+          return res.status(400).json({ message: "Invalid date format" });
+        }
+      }
+      
       const updatedInterview = await storage.updateInterview(id, interviewData);
       
       if (!updatedInterview) {
