@@ -330,23 +330,24 @@ export class PgStorage implements IStorage {
       }
       
       const technicalScoreSum = scoredQuestions.reduce((sum, q) => sum + (q.score || 0), 0);
-      const technicalScore = parseFloat((technicalScoreSum / totalQuestions).toFixed(1));
+      // Round to nearest integer instead of using decimal values
+      const technicalScore = Math.round(technicalScoreSum / totalQuestions);
       
       // Use technical score for other metrics as a placeholder
       // In a real app, these would be calculated separately
       const problemSolvingScore = technicalScore;
       const communicationScore = technicalScore;
       
-      // Overall score is the average of the three scores
-      const overallScore = parseFloat(((technicalScore + problemSolvingScore + communicationScore) / 3).toFixed(1));
+      // Overall score is the average of the three scores, rounded to an integer
+      const overallScore = Math.round((technicalScore + problemSolvingScore + communicationScore) / 3);
       
       // Generate a recommendation based on the overall score
       let recommendation: string;
-      if (overallScore >= 4.5) {
+      if (overallScore >= 5) {
         recommendation = "strong_hire";
-      } else if (overallScore >= 3.5) {
+      } else if (overallScore >= 4) {
         recommendation = "hire";
-      } else if (overallScore >= 2.5) {
+      } else if (overallScore >= 3) {
         recommendation = "consider";
       } else {
         recommendation = "pass";

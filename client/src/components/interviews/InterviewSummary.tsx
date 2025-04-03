@@ -130,7 +130,7 @@ export default function InterviewSummary({
 
   const formatScore = (score: number | null) => {
     if (score === null) return "N/A";
-    return score.toFixed(1);
+    return score.toString();
   };
 
   const getScorePercentage = (score: number | null) => {
