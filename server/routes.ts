@@ -274,7 +274,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // POST /api/interviews - Create a new interview
   app.post("/api/interviews", async (req, res) => {
     try {
-      const interviewData = insertInterviewSchema.parse(req.body);
+      // Handle date conversion explicitly before validation
+      let requestData = { ...req.body };
+      if (requestData.date && !(requestData.date instanceof Date)) {
+        try {
+          // If client sends a Date object that's been stringified during JSON serialization
+          requestData.date = new Date(requestData.date);
+        } catch (dateErr) {
+          return res.status(400).json({ message: "Invalid date format" });
+        }
+      }
+      
+      const interviewData = insertInterviewSchema.parse(requestData);
       const newInterview = await storage.createInterview(interviewData);
       res.status(201).json(newInterview);
     } catch (err) {

@@ -172,8 +172,8 @@ export default function GenerateQuestions() {
         {questions.length > 0 && (
           <div className="mb-6">
             <QuestionsList 
-              questions={questions.map(q => ({ 
-                id: Math.random(), // Temporary ID for display
+              questions={questions.map((q, index) => ({ 
+                id: `temp_${index}`, // Use deterministic values for temporary IDs
                 question: {
                   ...q,
                   technology: { name: "Technology" },
