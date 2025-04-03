@@ -105,14 +105,14 @@ export default function QuestionFilters({ onGenerateQuestions, isGenerating = fa
           </Label>
           <Select
             disabled={isLoadingQuestionTypes}
-            value={questionTypeId?.toString() || ""}
-            onValueChange={(value) => setQuestionTypeId(value ? parseInt(value) : undefined)}
+            value={questionTypeId?.toString() || "all"}
+            onValueChange={(value) => setQuestionTypeId(value !== "all" ? parseInt(value) : undefined)}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="All Types" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Types</SelectItem>
+              <SelectItem value="all">All Types</SelectItem>
               {questionTypes?.map((type) => (
                 <SelectItem key={type.id} value={type.id.toString()}>
                   {type.name.charAt(0).toUpperCase() + type.name.slice(1)}
