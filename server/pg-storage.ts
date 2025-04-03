@@ -461,31 +461,176 @@ export class PgStorage implements IStorage {
       };
       await db.insert(schema.questionTypes).values(architecture);
 
-      // Add sample questions
+      // Add sample questions for all technology stacks
       const sampleQuestions = [
+        // React questions
         {
           title: "Explain React's Virtual DOM",
           content: "What is the Virtual DOM in React and how does it improve performance?",
           answer: "The Virtual DOM is a lightweight copy of the actual DOM in memory. React uses it to optimize rendering by comparing the virtual DOM with the actual DOM and updating only the parts that have changed, rather than re-rendering the entire DOM. This process is called reconciliation and it significantly improves performance by reducing expensive DOM operations.",
           technologyId: 1, // React
           experienceLevelId: 2, // Intermediate
-          questionTypeId: 3 // Framework
+          questionTypeId: 3, // Framework
+          evaluatesTechnical: true,
+          evaluatesProblemSolving: false,
+          evaluatesCommunication: true
         },
+        {
+          title: "React Hooks",
+          content: "Explain the purpose of useState and useEffect hooks in React. What problems do they solve?",
+          answer: "useState allows functional components to have state variables, eliminating the need for class components in many cases. It returns a stateful value and a function to update it. useEffect allows performing side effects in functional components, like data fetching, subscriptions, or DOM manipulation. It serves the same purpose as lifecycle methods in class components (componentDidMount, componentDidUpdate, componentWillUnmount) but unified into a single API.",
+          technologyId: 1, // React
+          experienceLevelId: 2, // Intermediate
+          questionTypeId: 3, // Framework
+          evaluatesTechnical: true,
+          evaluatesProblemSolving: false,
+          evaluatesCommunication: false
+        },
+        {
+          title: "React Performance Optimization",
+          content: "What strategies would you use to optimize the performance of a React application with thousands of components?",
+          answer: "To optimize a large React application: 1) Use React.memo, useMemo, and useCallback to prevent unnecessary re-renders. 2) Implement code-splitting with React.lazy and Suspense to reduce initial load time. 3) Virtualize long lists with react-window or react-virtualized. 4) Use the React Profiler to identify performance bottlenecks. 5) Consider state management solutions like Context API with reducers or external libraries for more complex state. 6) Optimize images and other assets. 7) Implement progressive loading and skeleton screens.",
+          technologyId: 1, // React
+          experienceLevelId: 3, // Advanced
+          questionTypeId: 3, // Framework
+          evaluatesTechnical: true,
+          evaluatesProblemSolving: true,
+          evaluatesCommunication: true
+        },
+        
+        // Angular questions
         {
           title: "Compare Angular and React",
           content: "What are the main differences between Angular and React? When would you choose one over the other?",
           answer: "Angular is a full-featured framework with many built-in tools, while React is a library focused on the view layer. Angular uses TypeScript by default and has built-in state management, routing, and form validation. React requires additional libraries for these features but offers more flexibility. Choose Angular for large enterprise applications with complex requirements and consistent patterns. Choose React for more flexibility, faster rendering, and when working with a team familiar with JavaScript.",
           technologyId: 2, // Angular
           experienceLevelId: 3, // Advanced
-          questionTypeId: 3 // Framework
+          questionTypeId: 3, // Framework
+          evaluatesTechnical: true,
+          evaluatesProblemSolving: false,
+          evaluatesCommunication: true
         },
+        {
+          title: "Angular Change Detection",
+          content: "Explain Angular's change detection mechanism. How would you optimize it in a large application?",
+          answer: "Angular's change detection works by checking if the model (data) has changed since the last time detection ran, then updating the DOM if needed. By default, it uses zone.js to automatically detect asynchronous operations and trigger change detection. To optimize: 1) Use OnPush change detection strategy to only check components when inputs change. 2) Use immutable objects or observables with OnPush. 3) Detach change detection for sections not needing frequent updates. 4) Use pure pipes instead of methods in templates. 5) Break down complex components into smaller ones. 6) Optimize ngFor with trackBy.",
+          technologyId: 2, // Angular 
+          experienceLevelId: 3, // Advanced
+          questionTypeId: 4, // Architecture
+          evaluatesTechnical: true,
+          evaluatesProblemSolving: true,
+          evaluatesCommunication: false
+        },
+        
+        // Vue questions
+        {
+          title: "Vue.js Reactivity System",
+          content: "Explain Vue's reactivity system. How does Vue track changes to data?",
+          answer: "Vue's reactivity system works by intercepting property access and updates on data objects. In Vue 2, it uses Object.defineProperty to convert properties into getters/setters that notify Vue when properties are accessed or modified. In Vue 3, it uses ES6 Proxies for more efficient tracking. When a component renders, it tracks which reactive properties are accessed (dependency tracking). When a property changes, Vue notifies all components that depend on it to re-render. This system allows for automatic UI updates when the underlying data changes.",
+          technologyId: 3, // Vue
+          experienceLevelId: 2, // Intermediate
+          questionTypeId: 3, // Framework
+          evaluatesTechnical: true,
+          evaluatesProblemSolving: false,
+          evaluatesCommunication: true
+        },
+        
+        // Node.js questions
         {
           title: "Explain Node.js Event Loop",
           content: "How does the Node.js event loop work? Why is it important for server-side applications?",
           answer: "The Node.js event loop is a mechanism that allows Node.js to perform non-blocking I/O operations despite JavaScript being single-threaded. It works by offloading operations to the system kernel whenever possible and using a queue-based system (event queue) to handle callbacks when operations complete. This is important for server-side applications because it allows Node.js to handle thousands of concurrent connections without the overhead of threading, making it highly scalable and efficient for I/O-bound applications.",
           technologyId: 4, // Node.js
           experienceLevelId: 3, // Advanced
-          questionTypeId: 4 // Architecture
+          questionTypeId: 4, // Architecture
+          evaluatesTechnical: true,
+          evaluatesProblemSolving: false,
+          evaluatesCommunication: true
+        },
+        {
+          title: "Node.js Streams",
+          content: "Explain Node.js streams and give examples of when you would use them. How do they help with memory efficiency?",
+          answer: "Node.js streams are collections of data that might not be available all at once. They allow processing data in chunks rather than loading the entire dataset into memory. Types include: Readable (reading data), Writable (writing data), Duplex (both reading and writing), and Transform (modifying data while reading/writing). Use streams for: 1) Processing large files 2) Network communications 3) Real-time data processing. Streams help with memory efficiency by avoiding loading entire datasets into memory, instead processing data in small chunks which allows handling files larger than the available RAM.",
+          technologyId: 4, // Node.js
+          experienceLevelId: 2, // Intermediate
+          questionTypeId: 3, // Framework
+          evaluatesTechnical: true,
+          evaluatesProblemSolving: true,
+          evaluatesCommunication: false
+        },
+        
+        // Python questions
+        {
+          title: "Python Generators",
+          content: "What are generators in Python and what are the advantages of using them? Provide an example.",
+          answer: "Generators in Python are functions that can pause and resume their execution state between yields. They return an iterator that produces items one at a time, only when needed. Advantages: 1) Memory efficiency - only one item is in memory at a time 2) Lazy evaluation - items are only computed when requested 3) Infinite sequences - can represent infinite sequences 4) Simplified code. Example: `def fibonacci(): a, b = 0, 1; while True: yield a; a, b = b, a + b` This creates an infinite sequence of Fibonacci numbers without storing them all in memory.",
+          technologyId: 5, // Python
+          experienceLevelId: 2, // Intermediate
+          questionTypeId: 1, // Algorithms
+          evaluatesTechnical: true,
+          evaluatesProblemSolving: true,
+          evaluatesCommunication: false
+        },
+        {
+          title: "Python Concurrency",
+          content: "Compare threading, multiprocessing, and asyncio in Python. When would you use each approach?",
+          answer: "Threading: Uses threads for concurrency. Best for I/O-bound tasks due to the GIL (Global Interpreter Lock) which prevents true parallelism for CPU operations. Multiprocessing: Uses separate processes to bypass the GIL. Best for CPU-bound tasks as it allows true parallelism. Has higher memory overhead than threading. Asyncio: Uses a single-threaded event loop with coroutines. Best for I/O-bound tasks with many concurrent operations. Lower overhead than threading but requires async-compatible libraries. Choose threading for simple I/O tasks with existing code, multiprocessing for CPU-intensive operations, and asyncio for highly concurrent I/O operations with modern code.",
+          technologyId: 5, // Python
+          experienceLevelId: 3, // Advanced
+          questionTypeId: 4, // Architecture
+          evaluatesTechnical: true,
+          evaluatesProblemSolving: true,
+          evaluatesCommunication: true
+        },
+        
+        // .NET questions
+        {
+          title: ".NET Core vs .NET Framework",
+          content: "What are the key differences between .NET Core and .NET Framework? What factors would influence your choice between them?",
+          answer: ".NET Core (now .NET 5+) is cross-platform, open-source, and modular with better performance than .NET Framework, which is Windows-only and monolithic. Key differences: 1) Platform support: .NET Core runs on Windows, Linux, and macOS; .NET Framework is Windows-only. 2) Deployment: .NET Core supports self-contained deployments; .NET Framework requires the framework installed on the target machine. 3) Performance: .NET Core has better performance and scalability. Choose .NET Core (now .NET 5+) for new applications, cross-platform needs, microservices, and containerized deployments. Use .NET Framework for maintaining existing applications, when using technologies not yet ported to .NET Core, or for Windows-specific applications.",
+          technologyId: 6, // .NET
+          experienceLevelId: 2, // Intermediate
+          questionTypeId: 3, // Framework
+          evaluatesTechnical: true,
+          evaluatesProblemSolving: false,
+          evaluatesCommunication: true
+        },
+        {
+          title: "Entity Framework Performance",
+          content: "What strategies would you use to optimize Entity Framework performance in a large-scale application?",
+          answer: "To optimize Entity Framework performance: 1) Use AsNoTracking() for read-only queries to avoid change tracking overhead. 2) Implement proper eager loading with Include() to avoid N+1 query problems. 3) Use compiled queries for frequently executed queries. 4) Batch database operations where possible. 5) Create covering indexes for common queries. 6) Use paging for large datasets. 7) Consider raw SQL for complex queries. 8) Use database-generated values instead of client-generated. 9) Implement caching for frequently accessed data. 10) Monitor and tune database performance using tools like SQL Profiler. 11) Use appropriate isolation levels based on concurrency needs.",
+          technologyId: 6, // .NET
+          experienceLevelId: 3, // Advanced
+          questionTypeId: 2, // Database
+          evaluatesTechnical: true,
+          evaluatesProblemSolving: true,
+          evaluatesCommunication: false
+        },
+        
+        // Database questions
+        {
+          title: "SQL vs NoSQL Databases",
+          content: "Compare SQL and NoSQL databases. When would you choose one over the other?",
+          answer: "SQL databases are relational, structured, use SQL for queries, and provide ACID compliance. NoSQL databases are non-relational, schema-flexible, horizontally scalable, and come in various types (document, key-value, column, graph). Choose SQL when: 1) Data is structured and unchanging 2) Complex queries and transactions are needed 3) ACID compliance is required 4) Relationships between data entities are important. Choose NoSQL when: 1) Storing large volumes of unstructured data 2) Rapid development with evolving data models is needed 3) Horizontal scaling is required 4) High throughput with simpler queries is the priority 5) Specific data models (document, graph) better fit your use case.",
+          technologyId: 5, // Using Python ID as a placeholder for general database question
+          experienceLevelId: 2, // Intermediate
+          questionTypeId: 2, // Database
+          evaluatesTechnical: true,
+          evaluatesProblemSolving: false,
+          evaluatesCommunication: true
+        },
+        
+        // Algorithm questions
+        {
+          title: "Time and Space Complexity",
+          content: "Explain Big O notation and analyze the time and space complexity of a specific algorithm of your choice. How would you optimize it?",
+          answer: "Big O notation describes the upper bound of an algorithm's time or space requirements relative to input size. For example, a binary search algorithm has O(log n) time complexity: For an array of 10 elements, we need ~3 comparisons; for 1,000 elements, only ~10 comparisons. This logarithmic growth is much more efficient than linear O(n) algorithms. Space complexity is O(1) since it only needs a few variables regardless of input size. To optimize further, we could use interpolation search which has O(log log n) time complexity for uniformly distributed data, or implement it iteratively instead of recursively to reduce call stack overhead.",
+          technologyId: 4, // Using Node.js ID as a placeholder for algorithm question
+          experienceLevelId: 2, // Intermediate
+          questionTypeId: 1, // Algorithms
+          evaluatesTechnical: true,
+          evaluatesProblemSolving: true,
+          evaluatesCommunication: true
         }
       ];
 

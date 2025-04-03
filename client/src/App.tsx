@@ -9,6 +9,7 @@ import InterviewSession from "@/pages/InterviewSession";
 import Interviews from "@/pages/Interviews";
 import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
+import CustomQuestions from "@/pages/CustomQuestions";
 import Layout from "@/components/layout/Layout";
 
 function Router() {
@@ -17,6 +18,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/generate-questions" component={GenerateQuestions} />
+        <Route path="/custom-questions" component={CustomQuestions} />
         <Route path="/interviews" component={Interviews} />
         <Route path="/interviews/:id" component={InterviewSession} />
         <Route path="/reports" component={Reports} />

@@ -5,7 +5,8 @@ import {
   ClipboardListIcon, 
   BarChartIcon,
   SettingsIcon,
-  XIcon 
+  XIcon,
+  FileEditIcon
 } from "lucide-react";
 
 type SidebarProps = {
@@ -29,6 +30,11 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
       name: "Generate Questions",
       path: "/generate-questions",
       icon: HelpCircleIcon,
+    },
+    {
+      name: "Custom Questions",
+      path: "/custom-questions",
+      icon: FileEditIcon,
     },
     {
       name: "Interviews",

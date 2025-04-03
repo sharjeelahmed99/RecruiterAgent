@@ -2,29 +2,38 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronUpIcon, BrainIcon, LightbulbIcon, MessagesSquareIcon } from "lucide-react";
 import RatingScale from "@/components/ui/RatingScale";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 interface QuestionCardProps {
   questionId: number;
-  interviewQuestionId: number;
+  interviewQuestionId?: number;
   title: string;
   content: string;
   answer: string;
   technology: {
+    id: number;
     name: string;
   };
   experienceLevel: {
+    id: number;
     name: string;
   };
   questionType: {
+    id: number;
     name: string;
   };
-  score: number | null;
-  notes: string;
-  onScoreChange: (id: number, score: number, notes: string) => void;
+  score?: number | null;
+  notes?: string;
+  onScoreChange?: (id: number, score: number, notes: string) => void;
+  evaluatesTechnical?: boolean;
+  evaluatesProblemSolving?: boolean;
+  evaluatesCommunication?: boolean;
+  isCustom?: boolean;
+  showAnswers?: boolean;
+  showScoreTypes?: boolean;
 }
 
 export default function QuestionCard({
@@ -36,15 +45,22 @@ export default function QuestionCard({
   technology,
   experienceLevel,
   questionType,
-  score,
-  notes,
-  onScoreChange
+  score = null,
+  notes = "",
+  onScoreChange,
+  evaluatesTechnical = false,
+  evaluatesProblemSolving = false,
+  evaluatesCommunication = false,
+  isCustom = false,
+  showAnswers = false,
+  showScoreTypes = false
 }: QuestionCardProps) {
-  const [showAnswer, setShowAnswer] = useState(false);
-  const [noteText, setNoteText] = useState(notes);
+  const [showAnswer, setShowAnswer] = useState(showAnswers);
+  const [noteText, setNoteText] = useState(notes || "");
   
   const { mutate, isPending } = useMutation({
     mutationFn: async ({ score, notes }: { score: number; notes: string }) => {
+      if (!interviewQuestionId) return null;
       return apiRequest(
         "PUT", 
         `/api/interview-questions/${interviewQuestionId}`, 
@@ -57,8 +73,10 @@ export default function QuestionCard({
   });
 
   const handleScoreChange = (newScore: number) => {
-    onScoreChange(interviewQuestionId, newScore, noteText);
-    mutate({ score: newScore, notes: noteText });
+    if (onScoreChange && interviewQuestionId) {
+      onScoreChange(interviewQuestionId, newScore, noteText);
+      mutate({ score: newScore, notes: noteText });
+    }
   };
 
   const handleNotesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,7 +85,7 @@ export default function QuestionCard({
   };
 
   const handleNotesBlur = () => {
-    if (noteText !== notes) {
+    if (noteText !== notes && onScoreChange && interviewQuestionId) {
       onScoreChange(interviewQuestionId, score || 0, noteText);
       mutate({ score: score || 0, notes: noteText });
     }
@@ -88,15 +106,49 @@ export default function QuestionCard({
   return (
     <Card className="bg-white shadow rounded-lg transition-all duration-200 hover:shadow-md">
       <CardContent className="p-6">
-        <div className="flex justify-between">
+        <div className="flex justify-between items-start">
           <h3 className="text-lg font-medium text-gray-900">{title}</h3>
-          <Badge variant="outline" className="bg-indigo-100 text-indigo-800 hover:bg-indigo-200">
-            {technology.name}
-          </Badge>
+          <div className="flex gap-2">
+            {isCustom && (
+              <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-200">
+                Custom
+              </Badge>
+            )}
+            <Badge variant="outline" className="bg-indigo-100 text-indigo-800 hover:bg-indigo-200">
+              {technology.name}
+            </Badge>
+          </div>
         </div>
-        <p className="mt-2 text-sm text-gray-500">
-          {formatExperienceLevel(experienceLevel.name)} • {formatQuestionType(questionType.name)}
-        </p>
+        
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <p className="text-sm text-gray-500">
+            {formatExperienceLevel(experienceLevel.name)} • {formatQuestionType(questionType.name)}
+          </p>
+          
+          {/* Show evaluation flags */}
+          {showScoreTypes && (
+            <div className="flex gap-1 ml-auto">
+              {evaluatesTechnical && (
+                <Badge variant="outline" className="bg-blue-50 text-blue-800 hover:bg-blue-100 flex items-center gap-1">
+                  <BrainIcon className="h-3 w-3" />
+                  <span className="text-xs">Technical</span>
+                </Badge>
+              )}
+              {evaluatesProblemSolving && (
+                <Badge variant="outline" className="bg-amber-50 text-amber-800 hover:bg-amber-100 flex items-center gap-1">
+                  <LightbulbIcon className="h-3 w-3" />
+                  <span className="text-xs">Problem Solving</span>
+                </Badge>
+              )}
+              {evaluatesCommunication && (
+                <Badge variant="outline" className="bg-violet-50 text-violet-800 hover:bg-violet-100 flex items-center gap-1">
+                  <MessagesSquareIcon className="h-3 w-3" />
+                  <span className="text-xs">Communication</span>
+                </Badge>
+              )}
+            </div>
+          )}
+        </div>
         
         {/* Question Content */}
         <div className="mt-4">
@@ -126,25 +178,27 @@ export default function QuestionCard({
         </div>
         
         {/* Scoring Section */}
-        <div className="mt-6 border-t border-gray-200 pt-4">
-          <h4 className="text-sm font-medium text-gray-900">Rate Candidate's Response:</h4>
-          <div className="mt-2 flex items-center">
-            <div className="flex items-center">
-              <RatingScale value={score} onChange={handleScoreChange} />
-            </div>
-            <div className="ml-4 flex-1">
-              <Input
-                type="text"
-                className="block w-full"
-                placeholder="Add notes on response..."
-                value={noteText}
-                onChange={handleNotesChange}
-                onBlur={handleNotesBlur}
-                disabled={isPending}
-              />
+        {onScoreChange && (
+          <div className="mt-6 border-t border-gray-200 pt-4">
+            <h4 className="text-sm font-medium text-gray-900">Rate Candidate's Response:</h4>
+            <div className="mt-2 flex items-center">
+              <div className="flex items-center">
+                <RatingScale value={score} onChange={handleScoreChange} />
+              </div>
+              <div className="ml-4 flex-1">
+                <Input
+                  type="text"
+                  className="block w-full"
+                  placeholder="Add notes on response..."
+                  value={noteText}
+                  onChange={handleNotesChange}
+                  onBlur={handleNotesBlur}
+                  disabled={isPending}
+                />
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   );

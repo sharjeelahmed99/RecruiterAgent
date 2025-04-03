@@ -41,6 +41,14 @@ export const questions = pgTable("questions", {
   technologyId: integer("technology_id").notNull(),
   experienceLevelId: integer("experience_level_id").notNull(),
   questionTypeId: integer("question_type_id").notNull(),
+  
+  // Scoring flags for different skills
+  evaluatesTechnical: boolean("evaluates_technical").default(true),
+  evaluatesProblemSolving: boolean("evaluates_problem_solving").default(false),
+  evaluatesCommunication: boolean("evaluates_communication").default(false),
+  
+  // Flag for custom user-defined questions
+  isCustom: boolean("is_custom").default(false),
 });
 
 export const insertQuestionSchema = createInsertSchema(questions);
