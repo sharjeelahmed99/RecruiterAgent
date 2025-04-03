@@ -321,7 +321,8 @@ export class PgStorage implements IStorage {
       }
       
       // Calculate average scores by skill type
-      const scoredQuestions = questions.filter(q => q.score !== null);
+      // Only include non-skipped questions
+      const scoredQuestions = questions.filter(q => q.score !== null && !q.skipped);
       const totalQuestions = scoredQuestions.length;
       
       if (totalQuestions === 0) {
@@ -340,6 +341,10 @@ export class PgStorage implements IStorage {
         q => q.question.evaluatesCommunication
       );
       
+      console.log(`Technical Questions: ${technicalQuestions.length}`);
+      console.log(`Problem Solving Questions: ${problemSolvingQuestions.length}`);
+      console.log(`Communication Questions: ${communicationQuestions.length}`);
+      
       // Calculate separate scores for each skill
       const technicalScore = technicalQuestions.length > 0
         ? Math.round(technicalQuestions.reduce((sum, q) => sum + (q.score || 0), 0) / technicalQuestions.length)
@@ -353,11 +358,17 @@ export class PgStorage implements IStorage {
         ? Math.round(communicationQuestions.reduce((sum, q) => sum + (q.score || 0), 0) / communicationQuestions.length)
         : null;
       
+      console.log(`Technical Score: ${technicalScore}`);
+      console.log(`Problem Solving Score: ${problemSolvingScore}`);
+      console.log(`Communication Score: ${communicationScore}`);
+      
       // Calculate overall score using available skill scores
       const validScores = [technicalScore, problemSolvingScore, communicationScore].filter(score => score !== null) as number[];
       const overallScore = validScores.length > 0
         ? Math.round(validScores.reduce((sum, score) => sum + score, 0) / validScores.length)
         : null;
+      
+      console.log(`Overall Score: ${overallScore}`);
       
       // Generate a recommendation based on the overall score
       let recommendation: string | null = null;
