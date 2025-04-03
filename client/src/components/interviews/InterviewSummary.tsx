@@ -34,7 +34,8 @@ export default function InterviewSummary({
 
   const { mutate: saveInterview, isPending } = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("PUT", `/api/interviews/${interviewId}`, data);
+      const response = await apiRequest("PUT", `/api/interviews/${interviewId}`, data);
+      return await response.json();
     },
     onSuccess: (data) => {
       onSaveSummary(data);
@@ -44,7 +45,8 @@ export default function InterviewSummary({
         variant: "default",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Error saving interview:", error);
       toast({
         title: "Error saving summary",
         description: "There was an error saving the interview summary. Please try again.",
@@ -56,13 +58,15 @@ export default function InterviewSummary({
   const { mutate: submitEvaluation, isPending: isSubmitting } = useMutation({
     mutationFn: async (data: any) => {
       // First save the interview data
-      await apiRequest("PUT", `/api/interviews/${interviewId}`, { 
+      const updateResponse = await apiRequest("PUT", `/api/interviews/${interviewId}`, { 
         ...data,
         status: "completed" 
       });
+      await updateResponse.json();
       
       // Then return the complete interview
-      return await apiRequest("GET", `/api/interviews/${interviewId}`);
+      const getResponse = await apiRequest("GET", `/api/interviews/${interviewId}`);
+      return await getResponse.json();
     },
     onSuccess: (data) => {
       onSaveSummary(data);
@@ -72,7 +76,8 @@ export default function InterviewSummary({
         variant: "default",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Error submitting evaluation:", error);
       toast({
         title: "Error submitting evaluation",
         description: "There was an error submitting the evaluation. Please try again.",

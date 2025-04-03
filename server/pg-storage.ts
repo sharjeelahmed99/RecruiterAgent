@@ -293,61 +293,80 @@ export class PgStorage implements IStorage {
   async getRandomQuestions(filter: QuestionFilter): Promise<Question[]> {
     const filteredQuestions = await this.getFilteredQuestions(filter);
     
+    // Ensure we have unique questions by ID
+    const uniqueQuestions = Array.from(
+      new Map(filteredQuestions.map(q => [q.id, q])).values()
+    );
+    
     // Shuffle and limit to the requested count
-    const shuffled = filteredQuestions.sort(() => 0.5 - Math.random());
+    const shuffled = uniqueQuestions.sort(() => 0.5 - Math.random());
     return shuffled.slice(0, filter.count || 5);
   }
 
   async generateInterviewSummary(interviewId: number): Promise<Interview | undefined> {
-    // Get interview questions with scores
-    const interviewQuestions = await this.getInterviewQuestions(interviewId);
-    
-    if (interviewQuestions.length === 0) {
+    try {
+      // Get the interview
+      const interview = await this.getInterview(interviewId);
+      if (!interview) {
+        console.error(`Interview with ID ${interviewId} not found`);
+        return undefined;
+      }
+      
+      // Get interview questions with scores
+      const interviewQuestions = await this.getInterviewQuestions(interviewId);
+      
+      if (interviewQuestions.length === 0) {
+        console.error(`No questions found for interview with ID ${interviewId}`);
+        return interview; // Return original interview without changes
+      }
+      
+      // Calculate average scores
+      const scoredQuestions = interviewQuestions.filter(q => q.score !== null);
+      const totalQuestions = scoredQuestions.length;
+      
+      if (totalQuestions === 0) {
+        console.error(`No scored questions found for interview with ID ${interviewId}`);
+        return interview; // Return original interview without changes
+      }
+      
+      const technicalScoreSum = scoredQuestions.reduce((sum, q) => sum + (q.score || 0), 0);
+      const technicalScore = parseFloat((technicalScoreSum / totalQuestions).toFixed(1));
+      
+      // Use technical score for other metrics as a placeholder
+      // In a real app, these would be calculated separately
+      const problemSolvingScore = technicalScore;
+      const communicationScore = technicalScore;
+      
+      // Overall score is the average of the three scores
+      const overallScore = parseFloat(((technicalScore + problemSolvingScore + communicationScore) / 3).toFixed(1));
+      
+      // Generate a recommendation based on the overall score
+      let recommendation: string;
+      if (overallScore >= 4.5) {
+        recommendation = "strong_hire";
+      } else if (overallScore >= 3.5) {
+        recommendation = "hire";
+      } else if (overallScore >= 2.5) {
+        recommendation = "consider";
+      } else {
+        recommendation = "pass";
+      }
+      
+      // Update the interview with the calculated scores and recommendation
+      const updatedInterview = await this.updateInterview(interviewId, {
+        technicalScore,
+        problemSolvingScore,
+        communicationScore,
+        overallScore,
+        recommendation,
+        status: "completed"
+      });
+      
+      return updatedInterview;
+    } catch (error) {
+      console.error('Error generating interview summary:', error);
       return undefined;
     }
-    
-    // Calculate average scores
-    const scoredQuestions = interviewQuestions.filter(q => q.score !== null);
-    const totalQuestions = scoredQuestions.length;
-    
-    if (totalQuestions === 0) {
-      return undefined;
-    }
-    
-    const technicalScoreSum = scoredQuestions.reduce((sum, q) => sum + (q.score || 0), 0);
-    const technicalScore = parseFloat((technicalScoreSum / totalQuestions).toFixed(1));
-    
-    // Use technical score for other metrics as a placeholder
-    // In a real app, these would be calculated separately
-    const problemSolvingScore = technicalScore;
-    const communicationScore = technicalScore;
-    
-    // Overall score is the average of the three scores
-    const overallScore = parseFloat(((technicalScore + problemSolvingScore + communicationScore) / 3).toFixed(1));
-    
-    // Generate a recommendation based on the overall score
-    let recommendation: string;
-    if (overallScore >= 4.5) {
-      recommendation = "strong_hire";
-    } else if (overallScore >= 3.5) {
-      recommendation = "hire";
-    } else if (overallScore >= 2.5) {
-      recommendation = "consider";
-    } else {
-      recommendation = "pass";
-    }
-    
-    // Update the interview with the calculated scores and recommendation
-    const updatedInterview = await this.updateInterview(interviewId, {
-      technicalScore,
-      problemSolvingScore,
-      communicationScore,
-      overallScore,
-      recommendation,
-      status: "completed"
-    });
-    
-    return updatedInterview;
   }
 
   // Initialize the database with sample data

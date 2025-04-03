@@ -173,12 +173,12 @@ export default function GenerateQuestions() {
           <div className="mb-6">
             <QuestionsList 
               questions={questions.map((q, index) => ({ 
-                id: `temp_${index}`, // Use deterministic values for temporary IDs
+                id: index, // Use numeric IDs as expected by component
                 question: {
                   ...q,
-                  technology: { name: "Technology" },
-                  experienceLevel: { name: "Experience Level" },
-                  questionType: { name: "Question Type" }
+                  technology: { name: q.technologyId ? `Technology ${q.technologyId}` : "Technology" },
+                  experienceLevel: { name: q.experienceLevelId ? `Level ${q.experienceLevelId}` : "Experience Level" },
+                  questionType: { name: q.questionTypeId ? `Type ${q.questionTypeId}` : "Question Type" }
                 },
                 score: null,
                 notes: ""

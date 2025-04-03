@@ -95,6 +95,7 @@ export default function InterviewSession() {
   });
 
   const handleScoreChange = (id: number, score: number, notes: string) => {
+    console.log(`Updating score for question ${id} to ${score} with notes: ${notes}`);
     updateQuestionScore({ id, score, notes });
   };
 
