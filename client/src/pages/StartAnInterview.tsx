@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -12,6 +11,13 @@ import QuestionFilters from '@/components/questions/QuestionFilters';
 import QuestionsList from '@/components/questions/QuestionsList';
 import { type Question, type QuestionFilter, type Candidate } from '@shared/schema';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function StartAnInterview() {
   const [location, setLocation] = useLocation();
@@ -19,16 +25,21 @@ export default function StartAnInterview() {
   const [previewQuestions, setPreviewQuestions] = useState<Question[]>([]);
   const [questionFilters, setQuestionFilters] = useState<QuestionFilter | null>(null);
   const [showPreview, setShowPreview] = useState(false);
-  
+
   // Candidate form state
   const [candidateData, setCandidateData] = useState({
     name: '',
     email: '',
     phone: '',
     notes: '',
+    position: ''
   });
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [interviewTitle, setInterviewTitle] = useState('');
+
+  const { data: jobPositions } = useQuery<any>({
+    queryKey: ["/api/job-positions"],
+  });
 
   // File upload mutation
   const { mutate: uploadResume, isPending: isUploading } = useMutation({
@@ -124,7 +135,7 @@ export default function StartAnInterview() {
                   onChange={handleInputChange}
                 />
               </div>
-              
+
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -136,7 +147,7 @@ export default function StartAnInterview() {
                   onChange={handleInputChange}
                 />
               </div>
-              
+
               <div className="grid gap-2">
                 <Label htmlFor="phone">Phone</Label>
                 <Input
@@ -147,7 +158,7 @@ export default function StartAnInterview() {
                   onChange={handleInputChange}
                 />
               </div>
-              
+
               <div className="grid gap-2">
                 <Label htmlFor="notes">Notes</Label>
                 <Textarea
@@ -158,7 +169,7 @@ export default function StartAnInterview() {
                   onChange={handleInputChange}
                 />
               </div>
-              
+
               <div className="grid gap-2">
                 <Label htmlFor="resume">Resume</Label>
                 <Input
@@ -168,6 +179,21 @@ export default function StartAnInterview() {
                   onChange={handleFileChange}
                 />
                 <p className="text-sm text-gray-500">Accepted formats: PDF, DOC, DOCX</p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="position">Position</Label>
+                <Select onValueChange={(value) => setCandidateData(prev => ({ ...prev, position: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Position" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {jobPositions?.map((position: any) => (
+                      <SelectItem key={position.id} value={position.title}>
+                        {position.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardContent>
@@ -181,6 +207,11 @@ export default function StartAnInterview() {
             isPending={isCreatingCandidate}
             onTitleChange={setInterviewTitle}
             showStartButton={false}
+          />
+          <Input
+            placeholder="Interview Title"
+            value={interviewTitle}
+            onChange={(e) => setInterviewTitle(e.target.value)}
           />
           <Button 
             onClick={handleSubmit}
