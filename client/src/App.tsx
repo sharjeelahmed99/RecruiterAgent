@@ -11,6 +11,7 @@ import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
 import CustomQuestions from "@/pages/CustomQuestions";
 import ManageUsers from "@/pages/ManageUsers";
+import OpenJobs from "@/pages/OpenJobs";
 import Layout from "@/components/layout/Layout";
 import AuthPage from "@/pages/auth-page";
 import { AuthProvider } from "@/hooks/use-auth";
