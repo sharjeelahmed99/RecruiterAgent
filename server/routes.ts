@@ -7,12 +7,62 @@ import {
   insertCandidateSchema,
   insertInterviewSchema,
   insertInterviewQuestionSchema,
-  generateInterviewSchema
+  generateInterviewSchema,
+  USER_ROLES
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { setupAuth, checkRole } from "./auth";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+// Configure multer for file uploads
+const uploadsDir = path.join(process.cwd(), 'uploads');
+
+// Create uploads directory if it doesn't exist
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const fileStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (_req, file, cb) => {
+    // Create a unique filename with original extension
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+  }
+});
+
+const upload = multer({ 
+  storage: fileStorage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (_req, file, cb) => {
+    // Accept only PDFs, Word docs, and common image formats
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg',
+      'image/png'
+    ];
+    
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only PDF, Word documents, and images are allowed.'), false);
+    }
+  }
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication
+  const { checkRole } = setupAuth(app);
   // Error handling middleware for Zod validation errors
   const handleZodError = (err: unknown, res: Response) => {
     if (err instanceof ZodError) {
@@ -184,8 +234,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/candidates - Create a new candidate
-  app.post("/api/candidates", async (req, res) => {
+  // File upload route for candidate resumes
+  app.post("/api/upload/resume", upload.single('resume'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      
+      const filePath = req.file.path.replace(process.cwd(), ''); // Get relative path
+      res.json({ 
+        message: "File uploaded successfully",
+        resumeFile: filePath,
+        originalName: req.file.originalname
+      });
+    } catch (err) {
+      console.error("File upload error:", err);
+      res.status(500).json({ message: "File upload failed" });
+    }
+  });
+
+  // POST /api/candidates - Create a new candidate (HR only)
+  app.post("/api/candidates", checkRole([USER_ROLES.HR]), async (req, res) => {
     try {
       const candidateData = insertCandidateSchema.parse(req.body);
       const newCandidate = await storage.createCandidate(candidateData);
@@ -235,10 +304,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/interviews - Get all interviews
-  app.get("/api/interviews", async (_req, res) => {
+  // GET /api/users - Get all technical interviewers (for assignee dropdown)
+  app.get("/api/users/technical-interviewers", checkRole([USER_ROLES.HR, USER_ROLES.DIRECTOR]), async (_req, res) => {
     try {
-      const interviews = await storage.getInterviews();
+      // Get all users with role TECHNICAL_INTERVIEWER
+      const users = await storage.getUsersByRole(USER_ROLES.TECHNICAL_INTERVIEWER);
+      // Return users without password
+      const usersWithoutPassword = users.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+      res.json(usersWithoutPassword);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch technical interviewers" });
+    }
+  });
+
+  // GET /api/interviews - Get all interviews (filtered by role)
+  app.get("/api/interviews", async (req, res) => {
+    try {
+      let interviews;
+      
+      // If user is HR or Director, return all interviews
+      if (req.user?.role === USER_ROLES.HR || req.user?.role === USER_ROLES.DIRECTOR) {
+        interviews = await storage.getInterviews();
+      } 
+      // If user is Technical Interviewer, return only assigned interviews
+      else if (req.user?.role === USER_ROLES.TECHNICAL_INTERVIEWER) {
+        interviews = await storage.getInterviewsByAssignee(req.user.id);
+      }
+      // Default - empty array if not authenticated
+      else {
+        interviews = [];
+      }
+      
       res.json(interviews);
     } catch (err) {
       res.status(500).json({ message: "Failed to fetch interviews" });

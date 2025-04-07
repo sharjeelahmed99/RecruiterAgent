@@ -20,6 +20,7 @@ export interface IStorage {
   // User management
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUsersByRole(role: string): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
 
   // Technology methods
@@ -51,6 +52,7 @@ export interface IStorage {
   
   // Interview methods
   getInterviews(): Promise<Interview[]>;
+  getInterviewsByAssignee(assigneeId: number): Promise<Interview[]>;
   getInterview(id: number): Promise<Interview | undefined>;
   createInterview(interview: InsertInterview): Promise<Interview>;
   updateInterview(id: number, interview: Partial<Interview>): Promise<Interview | undefined>;
@@ -293,13 +295,40 @@ export class MemStorage implements IStorage {
       this.interviewQuestions.set(interviewQuestion.id, interviewQuestion);
     });
 
-    // Add a default user
-    const defaultUser: User = {
+    // Add default users for each role
+    const admin: User = {
       id: this.userId++,
       username: "admin",
-      password: "password" // In a real app, this would be hashed
+      password: "password", // In a real app, this would be hashed
+      email: "admin@example.com",
+      name: "Admin User",
+      role: "hr",
+      createdAt: new Date()
     };
-    this.users.set(defaultUser.id, defaultUser);
+    
+    const interviewer: User = {
+      id: this.userId++,
+      username: "tech",
+      password: "password", // In a real app, this would be hashed
+      email: "tech@example.com",
+      name: "Technical Interviewer",
+      role: "technical_interviewer",
+      createdAt: new Date()
+    };
+    
+    const director: User = {
+      id: this.userId++,
+      username: "director",
+      password: "password", // In a real app, this would be hashed
+      email: "director@example.com",
+      name: "Director",
+      role: "director",
+      createdAt: new Date()
+    };
+    
+    this.users.set(admin.id, admin);
+    this.users.set(interviewer.id, interviewer);
+    this.users.set(director.id, director);
   }
 
   // User management
@@ -313,9 +342,21 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async getUsersByRole(role: string): Promise<User[]> {
+    return Array.from(this.users.values()).filter(
+      (user) => user.role === role
+    );
+  }
+
   async createUser(user: InsertUser): Promise<User> {
     const id = this.userId++;
-    const newUser: User = { ...user, id };
+    // Set default createdAt to current date if not provided
+    const createdAt = new Date();
+    const newUser: User = { 
+      ...user, 
+      id,
+      createdAt: user.createdAt || createdAt
+    };
     this.users.set(id, newUser);
     return newUser;
   }
@@ -426,6 +467,12 @@ export class MemStorage implements IStorage {
   // Interview methods
   async getInterviews(): Promise<Interview[]> {
     return Array.from(this.interviews.values());
+  }
+  
+  async getInterviewsByAssignee(assigneeId: number): Promise<Interview[]> {
+    return Array.from(this.interviews.values()).filter(
+      interview => interview.assigneeId === assigneeId
+    );
   }
 
   async getInterview(id: number): Promise<Interview | undefined> {

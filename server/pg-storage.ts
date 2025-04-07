@@ -49,6 +49,10 @@ export class PgStorage implements IStorage {
     return users[0];
   }
 
+  async getUsersByRole(role: string): Promise<User[]> {
+    return await db.select().from(schema.users).where(eq(schema.users.role, role));
+  }
+
   async createUser(user: InsertUser): Promise<User> {
     const result = await db.insert(schema.users).values(user).returning();
     return result[0];
@@ -168,6 +172,10 @@ export class PgStorage implements IStorage {
   // Interview methods
   async getInterviews(): Promise<Interview[]> {
     return await db.select().from(schema.interviews);
+  }
+
+  async getInterviewsByAssignee(assigneeId: number): Promise<Interview[]> {
+    return await db.select().from(schema.interviews).where(eq(schema.interviews.assigneeId, assigneeId));
   }
 
   async getInterview(id: number): Promise<Interview | undefined> {

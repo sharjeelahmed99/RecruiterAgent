@@ -63,6 +63,8 @@ export const candidates = pgTable("candidates", {
   phone: text("phone"),
   notes: text("notes"),
   resumeUrl: text("resume_url"),
+  resumeFile: text("resume_file"), // Path to the uploaded resume file
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const insertCandidateSchema = createInsertSchema(candidates);
@@ -75,6 +77,7 @@ export const interviews = pgTable("interviews", {
   title: text("title").notNull(),
   candidateId: integer("candidate_id").notNull(),
   date: timestamp("date").notNull(),
+  assigneeId: integer("assignee_id"), // ID of the user assigned to conduct the interview
   status: text("status").notNull(), // "scheduled", "in_progress", "completed"
   notes: text("notes"),
   overallScore: integer("overall_score"),
@@ -82,6 +85,7 @@ export const interviews = pgTable("interviews", {
   problemSolvingScore: integer("problem_solving_score"),
   communicationScore: integer("communication_score"),
   recommendation: text("recommendation"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const insertInterviewSchema = createInsertSchema(interviews);
@@ -105,6 +109,7 @@ export type InsertInterviewQuestion = z.infer<typeof insertInterviewQuestionSche
 // Full interview data with related entities
 export type InterviewWithDetails = Interview & {
   candidate: Candidate;
+  assignee?: User;  // The user assigned to conduct the interview
   questions: (InterviewQuestion & {
     question: Question & {
       technology: Technology;
@@ -129,24 +134,37 @@ export const generateInterviewSchema = z.object({
   title: z.string(),
   candidateId: z.number(),
   date: z.date(),
+  assigneeId: z.number().optional(),
   questionFilters: questionFilterSchema,
 });
 
 export type GenerateInterview = z.infer<typeof generateInterviewSchema>;
 
-// Add users schema from existing file
+// User roles
+export const USER_ROLES = {
+  HR: "hr",
+  TECHNICAL_INTERVIEWER: "technical_interviewer",
+  DIRECTOR: "director"
+} as const;
+
+export type UserRole = typeof USER_ROLES[keyof typeof USER_ROLES];
+
+// Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   email: text("email"),
-  role: text("role").default("user"),
+  name: text("name"),
+  role: text("role").notNull().default(USER_ROLES.TECHNICAL_INTERVIEWER),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
   email: true,
+  name: true,
   role: true,
 });
 
