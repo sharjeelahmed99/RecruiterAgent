@@ -51,7 +51,7 @@ const upload = multer({
       'image/jpeg',
       'image/png'
     ];
-    
+
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
@@ -152,7 +152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const questionData = insertQuestionSchema.parse(req.body);
       const updatedQuestion = await storage.updateQuestion(id, questionData);
-      
+
       if (!updatedQuestion) {
         return res.status(404).json({ message: "Question not found" });
       }
@@ -187,18 +187,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const filter = questionFilterSchema.parse(req.body);
       const questions = await storage.getRandomQuestions(filter);
-      
+
       // Additional check to ensure uniqueness by ID
       const uniqueQuestionIds = new Set();
       const uniqueQuestions = [];
-      
+
       for (const question of questions) {
         if (!uniqueQuestionIds.has(question.id)) {
           uniqueQuestionIds.add(question.id);
           uniqueQuestions.push(question);
         }
       }
-      
+
       res.json(uniqueQuestions);
     } catch (err) {
       handleZodError(err, res);
@@ -240,7 +240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
-      
+
       const filePath = req.file.path.replace(process.cwd(), ''); // Get relative path
       res.json({ 
         message: "File uploaded successfully",
@@ -254,10 +254,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/candidates - Create a new candidate (HR only)
-  app.post("/api/candidates", checkRole([USER_ROLES.HR]), async (req, res) => {
+  app.post("/api/candidates", checkRole([USER_ROLES.HR]), upload.single('resume'), async (req, res) => {
     try {
-      const candidateData = insertCandidateSchema.parse(req.body);
-      const newCandidate = await storage.createCandidate(candidateData);
+      // Handle file upload data if present
+      const candidateData = {
+        ...req.body,
+        resumeFile: req.file?.path?.replace(process.cwd(), '') || null
+      };
+      const validatedData = insertCandidateSchema.parse(candidateData);
+      const newCandidate = await storage.createCandidate(validatedData);
       res.status(201).json(newCandidate);
     } catch (err) {
       handleZodError(err, res);
@@ -265,16 +270,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PUT /api/candidates/:id - Update a candidate
-  app.put("/api/candidates/:id", async (req, res) => {
+  app.put("/api/candidates/:id", upload.single('resume'), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid ID format" });
       }
 
-      const candidateData = insertCandidateSchema.parse(req.body);
-      const updatedCandidate = await storage.updateCandidate(id, candidateData);
-      
+      // Handle file upload data if present
+      const candidateData = {
+        ...req.body,
+        resumeFile: req.file?.path?.replace(process.cwd(), '') || null
+      };
+      const validatedData = insertCandidateSchema.parse(candidateData);
+      const updatedCandidate = await storage.updateCandidate(id, validatedData);
+
       if (!updatedCandidate) {
         return res.status(404).json({ message: "Candidate not found" });
       }
@@ -324,7 +334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/interviews", async (req, res) => {
     try {
       let interviews;
-      
+
       // If user is HR or Director, return all interviews
       if (req.user?.role === USER_ROLES.HR || req.user?.role === USER_ROLES.DIRECTOR) {
         interviews = await storage.getInterviews();
@@ -337,7 +347,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       else {
         interviews = [];
       }
-      
+
       res.json(interviews);
     } catch (err) {
       res.status(500).json({ message: "Failed to fetch interviews" });
@@ -395,7 +405,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Invalid date format" });
         }
       }
-      
+
       const interviewData = insertInterviewSchema.parse(requestData);
       const newInterview = await storage.createInterview(interviewData);
       res.status(201).json(newInterview);
@@ -412,9 +422,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (requestData.date && typeof requestData.date === 'string') {
         requestData.date = new Date(requestData.date);
       }
-      
+
       const generateData = generateInterviewSchema.parse(requestData);
-      
+
       // 1. Create the interview
       const interviewData = {
         title: generateData.title,
@@ -423,12 +433,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "in_progress",
         notes: ""
       };
-      
+
       const newInterview = await storage.createInterview(interviewData);
-      
+
       // 2. Generate questions
       const questions = await storage.getRandomQuestions(generateData.questionFilters);
-      
+
       // 3. Add questions to interview
       await Promise.all(questions.map(async (question) => {
         const interviewQuestion = {
@@ -437,10 +447,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           score: null,
           notes: ""
         };
-        
+
         await storage.createInterviewQuestion(interviewQuestion);
       }));
-      
+
       // 4. Return the interview with details
       const interviewWithDetails = await storage.getInterviewWithDetails(newInterview.id);
       res.status(201).json(interviewWithDetails);
@@ -459,7 +469,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Use partial schema for updates instead of requiring all fields
       const interviewData = insertInterviewSchema.partial().parse(req.body);
-      
+
       // Handle date conversion explicitly if present
       if (interviewData.date && !(interviewData.date instanceof Date)) {
         try {
@@ -468,9 +478,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Invalid date format" });
         }
       }
-      
+
       const updatedInterview = await storage.updateInterview(id, interviewData);
-      
+
       if (!updatedInterview) {
         return res.status(404).json({ message: "Interview not found" });
       }
@@ -536,7 +546,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const interviewQuestionData = insertInterviewQuestionSchema.partial().parse(req.body);
       const updatedInterviewQuestion = await storage.updateInterviewQuestion(id, interviewQuestionData);
-      
+
       if (!updatedInterviewQuestion) {
         return res.status(404).json({ message: "Interview question not found" });
       }
@@ -567,7 +577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes for user management
-  
+
   // GET /api/admin/users - Get all users (Admin only)
   app.get("/api/admin/users", checkRole([USER_ROLES.ADMIN]), async (_req, res) => {
     try {
@@ -582,7 +592,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch users" });
     }
   });
-  
+
   // PATCH /api/admin/users/:id - Update user role and active status (Admin only)
   app.patch("/api/admin/users/:id", checkRole([USER_ROLES.ADMIN]), async (req, res) => {
     try {
@@ -590,24 +600,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid ID format" });
       }
-      
+
       const { role, active } = req.body;
-      
+
       // Validate role and active values
       if (role && !Object.values(USER_ROLES).includes(role)) {
         return res.status(400).json({ message: "Invalid role value" });
       }
-      
+
       if (active !== undefined && typeof active !== 'boolean') {
         return res.status(400).json({ message: "Active must be a boolean value" });
       }
-      
+
       const updatedUser = await storage.updateUser(id, { role, active });
-      
+
       if (!updatedUser) {
         return res.status(404).json({ message: "User not found" });
       }
-      
+
       // Return user without password
       const { password, ...userWithoutPassword } = updatedUser;
       res.json(userWithoutPassword);
@@ -615,7 +625,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to update user" });
     }
   });
-  
+
   // DELETE /api/admin/users/:id - Delete a user (Admin only)
   app.delete("/api/admin/users/:id", checkRole([USER_ROLES.ADMIN]), async (req, res) => {
     try {
@@ -623,22 +633,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid ID format" });
       }
-      
+
       // Prevent deleting the last admin account
       const adminUsers = await storage.getUsersByRole(USER_ROLES.ADMIN);
       const isLastAdmin = adminUsers.length === 1 && adminUsers[0].id === id;
-      
+
       if (isLastAdmin) {
         return res.status(403).json({ 
           message: "Cannot delete the last admin account. Create another admin account first." 
         });
       }
-      
+
       const success = await storage.deleteUser(id);
       if (!success) {
         return res.status(404).json({ message: "User not found" });
       }
-      
+
       res.status(204).send();
     } catch (err) {
       res.status(500).json({ message: "Failed to delete user" });
