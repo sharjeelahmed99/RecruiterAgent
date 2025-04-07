@@ -656,11 +656,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Job Positions routes
-  app.get("/api/job-positions", async (_req, res) => {
+  app.get("/api/job-positions", async (req, res) => {
     try {
-      const positions = await storage.getJobPositions();
-      res.json(positions);
-    } catch (err) {
+      const jobPositions = await storage.getJobPositions();
+      if (!jobPositions) {
+        return res.json([]);
+      }
+      res.json(jobPositions);
+    } catch (error) {
+      console.error("Error fetching job positions:", error);
       res.status(500).json({ message: "Failed to fetch job positions" });
     }
   });

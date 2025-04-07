@@ -208,11 +208,29 @@ export default function StartAnInterview() {
             onTitleChange={setInterviewTitle}
             showStartButton={false}
           />
-          <Input
-            placeholder="Interview Title"
-            value={interviewTitle}
-            onChange={(e) => setInterviewTitle(e.target.value)}
-          />
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="jobPosition">Job Position</Label>
+              <Select onValueChange={(value) => setCandidateData(prev => ({ ...prev, position: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Position" />
+                </SelectTrigger>
+                <SelectContent>
+                  {jobPositions?.map((position: any) => (
+                    <SelectItem key={position.id} value={position.title}>
+                      {position.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <Input
+              placeholder="Interview Title"
+              value={interviewTitle}
+              onChange={(e) => setInterviewTitle(e.target.value)}
+            />
+          </div>
           <Button 
             onClick={handleSubmit}
             disabled={isCreatingCandidate || !candidateData.name || !interviewTitle}
