@@ -61,6 +61,8 @@ export function setupAuth(app: Express) {
     cookie: {
       maxAge: 1000 * 60 * 60 * 24, // 1 day
       secure: process.env.NODE_ENV === "production",
+      sameSite: 'lax',
+      path: '/'
     },
   };
 
@@ -157,12 +159,17 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/auth/user", (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Not authenticated" });
+    try {
+      if (!req.user || !req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      // Don't send password to client
+      const { password, ...userWithoutPassword } = req.user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error('Auth error:', error);
+      res.status(500).json({ message: "Internal server error" });
     }
-    // Don't send password to client
-    const { password, ...userWithoutPassword } = req.user!;
-    res.json(userWithoutPassword);
   });
 
   // Initialize user data with default accounts if they don't exist
