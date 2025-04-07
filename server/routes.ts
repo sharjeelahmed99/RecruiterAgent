@@ -566,6 +566,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin routes for user management
+  
+  // GET /api/admin/users - Get all users (Admin only)
+  app.get("/api/admin/users", checkRole([USER_ROLES.ADMIN]), async (_req, res) => {
+    try {
+      const users = await storage.getUsers();
+      // Return users without password
+      const usersWithoutPassword = users.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+      res.json(usersWithoutPassword);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+  
+  // PATCH /api/admin/users/:id - Update user role and active status (Admin only)
+  app.patch("/api/admin/users/:id", checkRole([USER_ROLES.ADMIN]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+      
+      const { role, active } = req.body;
+      
+      // Validate role and active values
+      if (role && !Object.values(USER_ROLES).includes(role)) {
+        return res.status(400).json({ message: "Invalid role value" });
+      }
+      
+      if (active !== undefined && typeof active !== 'boolean') {
+        return res.status(400).json({ message: "Active must be a boolean value" });
+      }
+      
+      const updatedUser = await storage.updateUser(id, { role, active });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Return user without password
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+  
+  // DELETE /api/admin/users/:id - Delete a user (Admin only)
+  app.delete("/api/admin/users/:id", checkRole([USER_ROLES.ADMIN]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+      
+      // Prevent deleting the last admin account
+      const adminUsers = await storage.getUsersByRole(USER_ROLES.ADMIN);
+      const isLastAdmin = adminUsers.length === 1 && adminUsers[0].id === id;
+      
+      if (isLastAdmin) {
+        return res.status(403).json({ 
+          message: "Cannot delete the last admin account. Create another admin account first." 
+        });
+      }
+      
+      const success = await storage.deleteUser(id);
+      if (!success) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.status(204).send();
+    } catch (err) {
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

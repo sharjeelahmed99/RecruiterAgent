@@ -16,6 +16,8 @@ type AuthContextType = {
   isHR: boolean;
   isDirector: boolean;
   isTechnicalInterviewer: boolean;
+  isAdmin: boolean;
+  isActive: boolean;
   loginMutation: UseMutationResult<User, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<User, Error, InsertUser>;
@@ -38,15 +40,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
   } = useQuery<User | null, Error>({
     queryKey: ["/api/auth/user"],
-    onSuccess: (data) => {
-      if (data) {
-        setRole(data.role);
-      } else {
-        setRole(null);
-      }
-    },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
+  
+  // Set role whenever user data changes
+  useEffect(() => {
+    if (user) {
+      setRole(user.role);
+    } else {
+      setRole(null);
+    }
+  }, [user]);
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
@@ -90,6 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isHR: role === USER_ROLES.HR,
         isDirector: role === USER_ROLES.DIRECTOR,
         isTechnicalInterviewer: role === USER_ROLES.TECHNICAL_INTERVIEWER,
+        isAdmin: role === USER_ROLES.ADMIN,
+        isActive: user?.active ?? false,
         loginMutation,
         logoutMutation,
         registerMutation,

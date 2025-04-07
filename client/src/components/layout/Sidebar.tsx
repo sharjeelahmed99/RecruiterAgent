@@ -6,8 +6,10 @@ import {
   BarChartIcon,
   SettingsIcon,
   XIcon,
-  FileEditIcon
+  FileEditIcon,
+  UsersIcon
 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 type SidebarProps = {
   onClose?: () => void;
@@ -15,6 +17,7 @@ type SidebarProps = {
 
 export default function Sidebar({ onClose }: SidebarProps = {}) {
   const [location] = useLocation();
+  const { isAdmin } = useAuth();
 
   const isActive = (path: string) => {
     return location === path;
@@ -27,7 +30,7 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
       icon: HomeIcon,
     },
     {
-      name: "Start an Interview",
+      name: "Create Profile",
       path: "/start-interview",
       icon: HelpCircleIcon,
     },
@@ -93,6 +96,28 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
                 </Link>
               );
             })}
+            
+            {/* Admin-only links */}
+            {isAdmin && (
+              <Link 
+                href="/manage-users"
+                className={`
+                  group flex items-center px-2 py-2 text-sm font-medium rounded-md 
+                  ${isActive("/manage-users") 
+                    ? "bg-indigo-900 text-white" 
+                    : "text-indigo-100 hover:bg-indigo-600"
+                  }
+                `}
+              >
+                <UsersIcon 
+                  className={`
+                    mr-3 h-6 w-6 
+                    ${isActive("/manage-users") ? "text-indigo-300" : "text-indigo-300"}
+                  `} 
+                />
+                Manage Users
+              </Link>
+            )}
           </nav>
         </div>
       </div>

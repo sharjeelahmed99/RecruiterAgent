@@ -57,6 +57,23 @@ export class PgStorage implements IStorage {
     const result = await db.insert(schema.users).values(user).returning();
     return result[0];
   }
+  
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(schema.users);
+  }
+  
+  async updateUser(id: number, user: Partial<User>): Promise<User | undefined> {
+    const result = await db.update(schema.users)
+      .set(user)
+      .where(eq(schema.users.id, id))
+      .returning();
+    return result[0];
+  }
+  
+  async deleteUser(id: number): Promise<boolean> {
+    const result = await db.delete(schema.users).where(eq(schema.users.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
 
   // Technology methods
   async getTechnologies(): Promise<Technology[]> {

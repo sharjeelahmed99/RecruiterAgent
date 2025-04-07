@@ -14,7 +14,7 @@ export function ProtectedRoute({
   allowedRoles?: AllowedRoles;
   component: () => React.JSX.Element;
 }) {
-  const { user, isLoading, role } = useAuth();
+  const { user, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -35,8 +35,26 @@ export function ProtectedRoute({
     );
   }
 
+  // Check if the user is inactive
+  if (user && !user.active) {
+    return (
+      <Route path={path}>
+        <div className="flex flex-col items-center justify-center min-h-screen">
+          <h1 className="text-2xl font-bold mb-4">Account Not Activated</h1>
+          <p className="mb-4">Your account needs to be activated by an administrator before you can access the system.</p>
+          <button
+            className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+            onClick={() => window.location.href = "/auth"}
+          >
+            Return to Login
+          </button>
+        </div>
+      </Route>
+    );
+  }
+
   // If user doesn't have the required role, redirect to the home page
-  if (allowedRoles.length > 0 && role && !allowedRoles.includes(role)) {
+  if (allowedRoles.length > 0 && user.role && !allowedRoles.includes(user.role)) {
     return (
       <Route path={path}>
         <div className="flex flex-col items-center justify-center min-h-screen">

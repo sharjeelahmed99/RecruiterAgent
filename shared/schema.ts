@@ -142,6 +142,7 @@ export type GenerateInterview = z.infer<typeof generateInterviewSchema>;
 
 // User roles
 export const USER_ROLES = {
+  ADMIN: "admin",
   HR: "hr",
   TECHNICAL_INTERVIEWER: "technical_interviewer",
   DIRECTOR: "director"
@@ -157,6 +158,7 @@ export const users = pgTable("users", {
   email: text("email"),
   name: text("name"),
   role: text("role").notNull().default(USER_ROLES.TECHNICAL_INTERVIEWER),
+  active: boolean("active").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -166,6 +168,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   name: true,
   role: true,
+  active: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

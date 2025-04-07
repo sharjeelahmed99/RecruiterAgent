@@ -23,7 +23,6 @@ const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  role: z.string().default(USER_ROLES.TECHNICAL_INTERVIEWER),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -178,10 +177,7 @@ function RegisterForm() {
   const { registerMutation } = useAuth();
   
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegisterFormData>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      role: USER_ROLES.TECHNICAL_INTERVIEWER
-    }
+    resolver: zodResolver(registerSchema)
   });
 
   const onSubmit = async (data: RegisterFormData) => {
@@ -256,17 +252,8 @@ function RegisterForm() {
             )}
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="role">Role</Label>
-            <select
-              id="role"
-              {...register("role")}
-              className="w-full rounded-md border border-input bg-background px-3 py-2"
-            >
-              <option value={USER_ROLES.HR}>HR</option>
-              <option value={USER_ROLES.TECHNICAL_INTERVIEWER}>Technical Interviewer</option>
-              <option value={USER_ROLES.DIRECTOR}>Director</option>
-            </select>
+          <div className="p-3 bg-gray-50 border border-gray-200 rounded-md mt-2">
+            <p className="text-sm text-gray-600 italic">Your account will need to be activated by an administrator before you can access the system.</p>
           </div>
         </CardContent>
         

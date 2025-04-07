@@ -76,6 +76,12 @@ export function setupAuth(app: Express) {
         if (!user || !(await comparePasswords(password, user.password))) {
           return done(null, false, { message: "Invalid username or password" });
         }
+        
+        // Check if user account is active
+        if (!user.active) {
+          return done(null, false, { message: "Account is inactive. Please contact an administrator." });
+        }
+        
         return done(null, user);
       } catch (error) {
         return done(error);
@@ -106,19 +112,21 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Username already exists" });
       }
 
-      // Hash password and create user
+      // Hash password and create user with inactive status by default
+      // Only admin can activate the account later
       const hashedPassword = await hashPassword(req.body.password);
       const user = await storage.createUser({
         ...req.body,
         password: hashedPassword,
+        active: false, // Set to inactive by default
+        role: USER_ROLES.TECHNICAL_INTERVIEWER, // Default role, can be changed by admin
       });
 
-      // Log the user in
-      req.login(user, (err) => {
-        if (err) return next(err);
-        // Don't send password to client
-        const { password, ...userWithoutPassword } = user;
-        return res.status(201).json(userWithoutPassword);
+      // Return success but don't log the user in
+      const { password, ...userWithoutPassword } = user;
+      return res.status(201).json({
+        ...userWithoutPassword,
+        message: "Registration successful. Your account is pending activation by an administrator."
       });
     } catch (error) {
       next(error);
@@ -166,39 +174,62 @@ export function setupAuth(app: Express) {
 // Create default users if they don't exist
 async function initializeDefaultUsers() {
   try {
+    // Create admin user first
+    const adminUser = await storage.getUserByUsername("admin");
+    if (!adminUser) {
+      const user = await storage.createUser({
+        username: "admin",
+        password: await hashPassword("admin_password"),
+        name: "System Administrator",
+        email: "admin@example.com",
+        role: USER_ROLES.ADMIN,
+        active: true
+      });
+      console.log("Created default System Administrator user");
+    }
+    
     const hrUser = await storage.getUserByUsername("hr_admin");
     if (!hrUser) {
-      await storage.createUser({
+      const user = await storage.createUser({
         username: "hr_admin",
         password: await hashPassword("hr_password"),
         name: "HR Administrator",
         email: "hr@example.com",
         role: USER_ROLES.HR,
       });
+      
+      // Manually set active to true for HR user
+      await storage.updateUser(user.id, { active: true });
       console.log("Created default HR admin user");
     }
 
     const techUser = await storage.getUserByUsername("tech_interviewer");
     if (!techUser) {
-      await storage.createUser({
+      const user = await storage.createUser({
         username: "tech_interviewer",
         password: await hashPassword("tech_password"),
         name: "Technical Interviewer",
         email: "tech@example.com",
         role: USER_ROLES.TECHNICAL_INTERVIEWER,
       });
+      
+      // Manually set active to true for tech interviewer
+      await storage.updateUser(user.id, { active: true });
       console.log("Created default Technical Interviewer user");
     }
 
     const directorUser = await storage.getUserByUsername("director");
     if (!directorUser) {
-      await storage.createUser({
+      const user = await storage.createUser({
         username: "director",
         password: await hashPassword("director_password"),
         name: "Director",
         email: "director@example.com",
         role: USER_ROLES.DIRECTOR,
       });
+      
+      // Manually set active to true for director
+      await storage.updateUser(user.id, { active: true });
       console.log("Created default Director user");
     }
   } catch (error) {

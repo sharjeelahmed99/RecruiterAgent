@@ -10,6 +10,7 @@ import Interviews from "@/pages/Interviews";
 import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
 import CustomQuestions from "@/pages/CustomQuestions";
+import ManageUsers from "@/pages/ManageUsers";
 import Layout from "@/components/layout/Layout";
 import AuthPage from "@/pages/auth-page";
 import { AuthProvider } from "@/hooks/use-auth";
@@ -48,6 +49,10 @@ function ProtectedSettings() {
   return <ProtectedLayout><Settings /></ProtectedLayout>;
 }
 
+function ProtectedManageUsers() {
+  return <ProtectedLayout><ManageUsers /></ProtectedLayout>;
+}
+
 function Router() {
   return (
     <Switch>
@@ -64,6 +69,11 @@ function Router() {
       <ProtectedRoute path="/interviews/:id" component={ProtectedInterviewSession} />
       <ProtectedRoute path="/reports" component={ProtectedReports} />
       <ProtectedRoute path="/settings" component={ProtectedSettings} />
+      <ProtectedRoute 
+        path="/manage-users" 
+        allowedRoles={[USER_ROLES.ADMIN]} 
+        component={ProtectedManageUsers} 
+      />
       <Route component={NotFound} />
     </Switch>
   );

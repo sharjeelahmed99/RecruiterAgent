@@ -22,6 +22,9 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUsersByRole(role: string): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
+  getUsers(): Promise<User[]>;
+  updateUser(id: number, user: Partial<User>): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
 
   // Technology methods
   getTechnologies(): Promise<Technology[]>;
@@ -302,8 +305,9 @@ export class MemStorage implements IStorage {
       password: "password", // In a real app, this would be hashed
       email: "admin@example.com",
       name: "Admin User",
-      role: "hr",
-      createdAt: new Date()
+      role: "admin", // Changed from hr to admin to match the USER_ROLES.ADMIN
+      createdAt: new Date(),
+      active: true
     };
     
     const interviewer: User = {
@@ -313,7 +317,8 @@ export class MemStorage implements IStorage {
       email: "tech@example.com",
       name: "Technical Interviewer",
       role: "technical_interviewer",
-      createdAt: new Date()
+      createdAt: new Date(),
+      active: true
     };
     
     const director: User = {
@@ -323,12 +328,25 @@ export class MemStorage implements IStorage {
       email: "director@example.com",
       name: "Director",
       role: "director",
-      createdAt: new Date()
+      createdAt: new Date(),
+      active: true
+    };
+    
+    const hr: User = {
+      id: this.userId++,
+      username: "hr",
+      password: "password", // In a real app, this would be hashed
+      email: "hr@example.com",
+      name: "HR Manager",
+      role: "hr",
+      createdAt: new Date(),
+      active: true
     };
     
     this.users.set(admin.id, admin);
     this.users.set(interviewer.id, interviewer);
     this.users.set(director.id, director);
+    this.users.set(hr.id, hr);
   }
 
   // User management
@@ -352,13 +370,38 @@ export class MemStorage implements IStorage {
     const id = this.userId++;
     // Set default createdAt to current date if not provided
     const createdAt = new Date();
+    // Set default active status to false for new users
     const newUser: User = { 
       ...user, 
       id,
-      createdAt: user.createdAt || createdAt
+      createdAt: user.createdAt || createdAt,
+      active: false // Default to inactive, admin must activate
     };
     this.users.set(id, newUser);
     return newUser;
+  }
+  
+  async getUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+  
+  async updateUser(id: number, user: Partial<User>): Promise<User | undefined> {
+    const existingUser = this.users.get(id);
+    if (!existingUser) {
+      return undefined;
+    }
+    
+    const updatedUser: User = {
+      ...existingUser,
+      ...user
+    };
+    
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+  
+  async deleteUser(id: number): Promise<boolean> {
+    return this.users.delete(id);
   }
 
   // Technology methods
