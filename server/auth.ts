@@ -218,10 +218,11 @@ export function setupAuth(app: Express) {
 // Create default users if they don't exist
 async function initializeDefaultUsers() {
   try {
-    // Create admin user first
+    // Create or update admin user
     const adminUser = await storage.getUserByUsername("admin");
+    const hashedPassword = await hashPassword("admin");
+    
     if (!adminUser) {
-      const hashedPassword = await hashPassword("admin");
       const user = await storage.createUser({
         username: "admin",
         password: hashedPassword,
@@ -231,6 +232,12 @@ async function initializeDefaultUsers() {
         active: true
       });
       console.log("Created default System Administrator user");
+    } else {
+      await storage.updateUser(adminUser.id, {
+        password: hashedPassword,
+        active: true
+      });
+      console.log("Reset System Administrator password");
     }
     
     const hrUser = await storage.getUserByUsername("hr_admin");
