@@ -1,13 +1,42 @@
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { BellIcon, SearchIcon, MenuIcon } from "lucide-react";
+import { BellIcon, SearchIcon, MenuIcon, LogOut, User } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 type NavbarProps = {
   onSidebarToggle: () => void;
 };
 
 export default function Navbar({ onSidebarToggle }: NavbarProps) {
+  const { user, logoutMutation, role } = useAuth();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync();
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out of your account",
+      });
+    } catch (error) {
+      toast({
+        title: "Logout failed",
+        description: "An error occurred while logging out",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="relative z-10 flex-shrink-0 flex h-16 bg-white shadow">
       <button
@@ -47,15 +76,36 @@ export default function Navbar({ onSidebarToggle }: NavbarProps) {
           </Button>
 
           <div className="ml-3 relative">
-            <div>
-              <Avatar className="h-8 w-8 rounded-full">
-                <AvatarImage
-                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                  alt="User profile"
-                />
-                <AvatarFallback>US</AvatarFallback>
-              </Avatar>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="p-0 rounded-full focus:outline-none">
+                  <Avatar className="h-8 w-8 rounded-full">
+                    <AvatarImage
+                      src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                      alt="User profile"
+                    />
+                    <AvatarFallback>
+                      {user?.name ? user.name.charAt(0) : user?.username.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <div className="font-medium">{user?.name || user?.username}</div>
+                  <div className="text-xs text-gray-500 mt-1">{role}</div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="cursor-pointer">
+                  <User className="mr-2 h-4 w-4" />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>

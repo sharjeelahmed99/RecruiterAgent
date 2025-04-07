@@ -11,29 +11,71 @@ import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
 import CustomQuestions from "@/pages/CustomQuestions";
 import Layout from "@/components/layout/Layout";
+import AuthPage from "@/pages/auth-page";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/lib/protected-route";
+import { USER_ROLES } from "@shared/schema";
+
+const ProtectedLayout = ({ children }: { children: React.ReactNode }) => {
+  return <Layout>{children}</Layout>;
+};
+
+function ProtectedDashboard() {
+  return <ProtectedLayout><Dashboard /></ProtectedLayout>;
+}
+
+function ProtectedStartInterview() {
+  return <ProtectedLayout><StartAnInterview /></ProtectedLayout>;
+}
+
+function ProtectedCustomQuestions() {
+  return <ProtectedLayout><CustomQuestions /></ProtectedLayout>;
+}
+
+function ProtectedInterviews() {
+  return <ProtectedLayout><Interviews /></ProtectedLayout>;
+}
+
+function ProtectedInterviewSession() {
+  return <ProtectedLayout><InterviewSession /></ProtectedLayout>;
+}
+
+function ProtectedReports() {
+  return <ProtectedLayout><Reports /></ProtectedLayout>;
+}
+
+function ProtectedSettings() {
+  return <ProtectedLayout><Settings /></ProtectedLayout>;
+}
 
 function Router() {
   return (
-    <Layout>
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/start-interview" component={StartAnInterview} />
-        <Route path="/custom-questions" component={CustomQuestions} />
-        <Route path="/interviews" component={Interviews} />
-        <Route path="/interviews/:id" component={InterviewSession} />
-        <Route path="/reports" component={Reports} />
-        <Route path="/settings" component={Settings} />
-        <Route component={NotFound} />
-      </Switch>
-    </Layout>
+    <Switch>
+      <Route path="/auth" component={AuthPage} />
+      
+      <ProtectedRoute path="/" component={ProtectedDashboard} />
+      <ProtectedRoute 
+        path="/start-interview" 
+        allowedRoles={[USER_ROLES.HR]} 
+        component={ProtectedStartInterview} 
+      />
+      <ProtectedRoute path="/custom-questions" component={ProtectedCustomQuestions} />
+      <ProtectedRoute path="/interviews" component={ProtectedInterviews} />
+      <ProtectedRoute path="/interviews/:id" component={ProtectedInterviewSession} />
+      <ProtectedRoute path="/reports" component={ProtectedReports} />
+      <ProtectedRoute path="/settings" component={ProtectedSettings} />
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
+      <AuthProvider>
+        <Router />
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
