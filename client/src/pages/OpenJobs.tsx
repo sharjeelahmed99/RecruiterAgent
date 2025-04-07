@@ -1,11 +1,43 @@
 
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import JobPositionForm from '@/components/jobs/JobPositionForm';
+import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useLocation } from 'wouter';
 
-const JOBS = [
+export default function OpenJobs() {
+  const [, navigate] = useLocation();
+
+  const { data: jobs = [] } = useQuery({
+    queryKey: ['jobPositions'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/job-positions');
+      return response.json();
+    }
+  });
+
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  return (
+    <div className="container mx-auto py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Open Positions</h1>
+        <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <SheetTrigger asChild>
+            <Button>Create New Position</Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+            <JobPositionForm />
+          </SheetContent>
+        </Sheet>
+      </div>
+      
+      <div className="grid gap-6">
+        {jobs.map((job) => (
   {
     id: 1,
     title: 'Senior Java Developer',

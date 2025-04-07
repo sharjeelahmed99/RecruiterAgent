@@ -173,3 +173,19 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+// JOB POSITIONS TABLE
+export const jobPositions = pgTable("job_positions", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  department: text("department").notNull(),
+  level: text("level").notNull(),
+  location: text("location").notNull(),
+  description: text("description").notNull(),
+  requirements: json("requirements").notNull().$type<string[]>(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertJobPositionSchema = createInsertSchema(jobPositions);
+export type JobPosition = typeof jobPositions.$inferSelect;
+export type InsertJobPosition = z.infer<typeof insertJobPositionSchema>;

@@ -655,6 +655,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Job Positions routes
+  app.get("/api/job-positions", async (_req, res) => {
+    try {
+      const positions = await storage.getJobPositions();
+      res.json(positions);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch job positions" });
+    }
+  });
+
+  app.post("/api/job-positions", checkRole([USER_ROLES.HR]), async (req, res) => {
+    try {
+      const positionData = insertJobPositionSchema.parse(req.body);
+      const newPosition = await storage.createJobPosition(positionData);
+      res.status(201).json(newPosition);
+    } catch (err) {
+      handleZodError(err, res);
+    }
+  });
+
+  app.delete("/api/job-positions/:id", checkRole([USER_ROLES.HR]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+
+      const success = await storage.deleteJobPosition(id);
+      if (!success) {
+        return res.status(404).json({ message: "Job position not found" });
+      }
+
+      res.status(204).send();
+    } catch (err) {
+      res.status(500).json({ message: "Failed to delete job position" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
