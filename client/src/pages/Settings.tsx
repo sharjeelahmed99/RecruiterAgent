@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { 
   UserIcon, 
@@ -19,14 +19,14 @@ import {
 export default function Settings() {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
-  
+
   // Profile settings
   const [profileSettings, setProfileSettings] = useState({
     name: "Admin User",
     email: "admin@example.com",
     role: "Technical Interviewer"
   });
-  
+
   // Notification settings
   const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
@@ -34,7 +34,7 @@ export default function Settings() {
     candidateUpdates: false,
     reportGeneration: true
   });
-  
+
   // Display settings
   const [displaySettings, setDisplaySettings] = useState({
     darkMode: false,
@@ -42,7 +42,7 @@ export default function Settings() {
     fontSize: "medium",
     questionDisplayCount: 5
   });
-  
+
   // Handle profile form change
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -51,7 +51,7 @@ export default function Settings() {
       [name]: value
     }));
   };
-  
+
   // Handle notification toggle
   const handleNotificationToggle = (setting: keyof typeof notificationSettings) => {
     setNotificationSettings(prev => ({
@@ -59,7 +59,7 @@ export default function Settings() {
       [setting]: !prev[setting]
     }));
   };
-  
+
   // Handle display toggle
   const handleDisplayToggle = (setting: keyof typeof displaySettings) => {
     if (typeof displaySettings[setting] === 'boolean') {
@@ -69,12 +69,12 @@ export default function Settings() {
       }));
     }
   };
-  
+
   // Handle number input change
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const numValue = parseInt(value, 10);
-    
+
     if (!isNaN(numValue) && numValue > 0) {
       setDisplaySettings(prev => ({
         ...prev,
@@ -82,11 +82,11 @@ export default function Settings() {
       }));
     }
   };
-  
+
   // Save settings
   const saveSettings = () => {
     setSaving(true);
-    
+
     // Simulate API call
     setTimeout(() => {
       setSaving(false);
@@ -97,7 +97,7 @@ export default function Settings() {
       });
     }, 1000);
   };
-  
+
   // Reset settings
   const resetSettings = () => {
     // Show confirmation toast
@@ -107,12 +107,42 @@ export default function Settings() {
       variant: "default",
     });
   };
-  
+
+  const handlePasswordChange = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSaving(true);
+    const formData = new FormData(e.currentTarget);
+    const currentPassword = formData.get('currentPassword') as string;
+    const newPassword = formData.get('newPassword') as string;
+    const confirmPassword = formData.get('confirmPassword') as string;
+
+    //Simulate API call to change password.  Replace with actual API call.
+    if(newPassword === confirmPassword && newPassword.length >=6){
+      setTimeout(() => {
+        setSaving(false);
+        toast({
+          title: "Password Changed",
+          description: "Your password has been updated successfully.",
+          variant: "default",
+        });
+      }, 1000);
+    } else {
+      setTimeout(() => {
+        setSaving(false);
+        toast({
+          title: "Password Change Failed",
+          description: "Passwords do not match or are less than 6 characters",
+          variant: "error",
+        });
+      }, 1000);
+    }
+  };
+
   return (
     <div className="py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
         <h1 className="text-2xl font-semibold text-gray-900 mb-6">Settings</h1>
-        
+
         <Tabs defaultValue="profile" className="space-y-6">
           <TabsList className="bg-gray-100 p-1">
             <TabsTrigger value="profile" className="flex items-center gap-2">
@@ -132,7 +162,7 @@ export default function Settings() {
               <span>Security</span>
             </TabsTrigger>
           </TabsList>
-          
+
           {/* Profile Settings */}
           <TabsContent value="profile">
             <Card>
@@ -194,7 +224,7 @@ export default function Settings() {
               </CardFooter>
             </Card>
           </TabsContent>
-          
+
           {/* Notification Settings */}
           <TabsContent value="notifications">
             <Card>
@@ -271,7 +301,7 @@ export default function Settings() {
               </CardFooter>
             </Card>
           </TabsContent>
-          
+
           {/* Display Settings */}
           <TabsContent value="display">
             <Card>
@@ -357,7 +387,7 @@ export default function Settings() {
               </CardFooter>
             </Card>
           </TabsContent>
-          
+
           {/* Security Settings */}
           <TabsContent value="security">
             <Card>
@@ -369,29 +399,50 @@ export default function Settings() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="current-password">Current Password</Label>
-                    <Input id="current-password" type="password" />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <form onSubmit={handlePasswordChange}>
                     <div className="space-y-2">
-                      <Label htmlFor="new-password">New Password</Label>
-                      <Input id="new-password" type="password" />
+                      <Label htmlFor="current-password">Current Password</Label>
+                      <Input 
+                        id="current-password" 
+                        name="currentPassword"
+                        type="password" 
+                        required
+                        minLength={6}
+                      />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm-password">Confirm New Password</Label>
-                      <Input id="confirm-password" type="password" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="new-password">New Password</Label>
+                        <Input 
+                          id="new-password" 
+                          name="newPassword"
+                          type="password" 
+                          required
+                          minLength={6}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirm-password">Confirm New Password</Label>
+                        <Input 
+                          id="confirm-password" 
+                          name="confirmPassword"
+                          type="password" 
+                          required
+                          minLength={6}
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <div className="pt-4">
-                    <Button
-                      variant="outline"
-                      className="w-full md:w-auto flex items-center"
-                    >
-                      <RefreshCwIcon className="mr-2 h-4 w-4" />
-                      Change Password
-                    </Button>
-                  </div>
+                    <div className="pt-4">
+                      <Button
+                        type="submit"
+                        variant="outline"
+                        className="w-full md:w-auto flex items-center"
+                      >
+                        <RefreshCwIcon className="mr-2 h-4 w-4" />
+                        Change Password
+                      </Button>
+                    </div>
+                  </form>
                   <Separator className="my-2" />
                   <div className="pt-2">
                     <h4 className="text-sm font-medium mb-2">Sessions</h4>

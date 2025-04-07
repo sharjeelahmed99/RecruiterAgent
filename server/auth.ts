@@ -158,6 +158,39 @@ export function setupAuth(app: Express) {
     });
   });
 
+  app.post("/api/auth/change-password", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+
+      // Verify current password
+      const user = await storage.getUser(req.user!.id);
+      if (!user || !(await comparePasswords(currentPassword, user.password))) {
+        return res.status(400).json({ message: "Current password is incorrect" });
+      }
+
+      // Hash and update new password
+      const hashedPassword = await hashPassword(newPassword);
+      await storage.updateUser(user.id, { password: hashedPassword });
+
+      res.json({ message: "Password updated successfully" });
+    } catch (error) {
+      console.error('Password change error:', error);
+      res.status(500).json({ message: "Failed to update password" });
+    }
+  });
+
   app.get("/api/auth/user", (req, res) => {
     try {
       if (!req.user || !req.isAuthenticated()) {
