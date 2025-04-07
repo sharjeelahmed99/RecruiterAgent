@@ -1,26 +1,19 @@
-
 import { useState } from 'react';
+import { useLocation } from 'wouter';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Badge } from '@/components/ui/badge';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import JobPositionForm from '@/components/jobs/JobPositionForm';
 import { useQuery } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { useLocation } from 'wouter';
 
 export default function OpenJobs() {
   const [, navigate] = useLocation();
-
-  const { data: jobs = [] } = useQuery({
-    queryKey: ['jobPositions'],
-    queryFn: async () => {
-      const response = await apiRequest('GET', '/api/job-positions');
-      return response.json();
-    }
-  });
-
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  const { data: jobs = [] } = useQuery<any>({
+    queryKey: ["/api/job-positions"],
+  });
 
   return (
     <div className="container mx-auto py-8">
@@ -35,47 +28,9 @@ export default function OpenJobs() {
           </SheetContent>
         </Sheet>
       </div>
-      
-      <div className="grid gap-6">
-        {jobs.map((job) => (
-  {
-    id: 1,
-    title: 'Senior Java Developer',
-    department: 'Engineering',
-    level: 'Senior',
-    location: 'Remote',
-    description: 'Looking for an experienced Java developer with strong Spring Boot knowledge.',
-    requirements: ['8+ years Java experience', 'Spring Boot', 'Microservices', 'SQL'],
-  },
-  {
-    id: 2,
-    title: 'Solutions Architect',
-    department: 'Architecture',
-    level: 'Senior',
-    location: 'Hybrid',
-    description: 'Seeking a solutions architect to design and oversee enterprise applications.',
-    requirements: ['10+ years experience', 'Enterprise Architecture', 'Cloud Platforms', 'Team Leadership'],
-  },
-  {
-    id: 3,
-    title: 'Frontend Tech Lead',
-    department: 'Engineering',
-    level: 'Lead',
-    location: 'On-site',
-    description: 'Leading our frontend development team and initiatives.',
-    requirements: ['React', 'TypeScript', '7+ years experience', 'Team Management'],
-  },
-];
 
-export default function OpenJobs() {
-  const [, navigate] = useLocation();
-
-  return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Open Positions</h1>
-      
       <div className="grid gap-6">
-        {JOBS.map((job) => (
+        {jobs.map((job: any) => (
           <Card key={job.id}>
             <CardHeader>
               <div className="flex justify-between items-start">
@@ -99,7 +54,7 @@ export default function OpenJobs() {
               <div>
                 <h4 className="font-medium mb-2">Requirements:</h4>
                 <ul className="list-disc list-inside text-gray-600">
-                  {job.requirements.map((req, index) => (
+                  {job.requirements?.map((req: string, index: number) => (
                     <li key={index}>{req}</li>
                   ))}
                 </ul>
