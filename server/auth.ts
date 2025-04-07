@@ -221,9 +221,10 @@ async function initializeDefaultUsers() {
     // Create admin user first
     const adminUser = await storage.getUserByUsername("admin");
     if (!adminUser) {
+      const hashedPassword = await hashPassword("admin");
       const user = await storage.createUser({
         username: "admin",
-        password: await hashPassword("Password@123"),
+        password: hashedPassword,
         name: "System Administrator",
         email: "admin@example.com",
         role: USER_ROLES.ADMIN,
