@@ -184,7 +184,7 @@ export default function StartAnInterview() {
           />
           <Button 
             onClick={handleSubmit}
-            disabled={isCreatingCandidate || !candidateData.email || !interviewTitle}
+            disabled={isCreatingCandidate || !candidateData.name || !interviewTitle}
             className="w-full mt-4"
           >
             Create Interview Profile

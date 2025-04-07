@@ -69,6 +69,7 @@ function Router() {
       <ProtectedRoute path="/interviews/:id" component={ProtectedInterviewSession} />
       <ProtectedRoute path="/reports" component={ProtectedReports} />
       <ProtectedRoute path="/settings" component={ProtectedSettings} />
+      <ProtectedRoute path="/open-jobs" component={OpenJobs} />
       <ProtectedRoute 
         path="/manage-users" 
         allowedRoles={[USER_ROLES.ADMIN]} 

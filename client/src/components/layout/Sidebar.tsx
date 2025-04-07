@@ -7,7 +7,8 @@ import {
   SettingsIcon,
   XIcon,
   FileEditIcon,
-  UsersIcon
+  UsersIcon,
+  BriefcaseIcon
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -33,6 +34,11 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
       name: "Create Profile",
       path: "/start-interview",
       icon: HelpCircleIcon,
+    },
+    {
+      name: "Open Jobs",
+      path: "/open-jobs",
+      icon: BriefcaseIcon,
     },
     {
       name: "Custom Questions",
