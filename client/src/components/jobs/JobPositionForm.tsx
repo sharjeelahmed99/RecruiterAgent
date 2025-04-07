@@ -18,7 +18,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { insertJobPositionSchema } from "@shared/schema";
 
-export default function JobPositionForm() {
+export default function JobPositionForm({ onSuccess }: { onSuccess?: () => void }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const form = useForm({
@@ -39,12 +39,13 @@ export default function JobPositionForm() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["jobPositions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/job-positions"] });
       toast({
         title: "Success",
         description: "Job position created successfully",
       });
       form.reset();
+      onSuccess?.();
     },
     onError: () => {
       toast({

@@ -24,7 +24,7 @@ export default function OpenJobs() {
             <Button>Create New Position</Button>
           </SheetTrigger>
           <SheetContent side="right" className="w-[400px] sm:w-[540px]">
-            <JobPositionForm />
+            <JobPositionForm onSuccess={() => setIsCreateOpen(false)} />
           </SheetContent>
         </Sheet>
       </div>
