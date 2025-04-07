@@ -102,8 +102,8 @@ export default function StartAnInterview() {
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Start an Interview</h1>
-        <p className="text-gray-600">Create a candidate profile and generate interview questions.</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Interview Profile</h1>
+        <p className="text-gray-600">Create a new candidate and interview profile.</p>
       </div>
 
       <div className="grid grid-cols-1 gap-8">
@@ -176,34 +176,20 @@ export default function StartAnInterview() {
         <div className="bg-white shadow-sm rounded-lg p-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Interview Setup</h2>
           <QuestionFilters 
-            onGenerateQuestions={(filter) => {
-              setQuestionFilters(filter);
-              setShowPreview(true);
-            }}
-            onStartInterview={handleSubmit}
+            onGenerateQuestions={handleSubmit}
             isGenerating={false}
             isPending={isCreatingCandidate}
             onTitleChange={setInterviewTitle}
-            showStartButton={true}
-            disableStartButton={!candidateData.name.trim()}
+            showStartButton={false}
           />
+          <Button 
+            onClick={handleSubmit}
+            disabled={isCreatingCandidate || !candidateData.email || !interviewTitle}
+            className="w-full mt-4"
+          >
+            Create Interview Profile
+          </Button>
         </div>
-
-        {showPreview && (
-          <div className="bg-white shadow-sm rounded-lg p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-gray-800">Preview Questions</h2>
-            </div>
-            <QuestionsList
-              questions={previewQuestions}
-              isLoading={false}
-              isGenerating={false}
-              showAnswers={true}
-              showScoreTypes={true}
-              isPreview={true}
-            />
-          </div>
-        )}
       </div>
     </div>
   );
