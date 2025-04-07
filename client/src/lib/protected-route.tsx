@@ -53,8 +53,8 @@ export function ProtectedRoute({
     );
   }
 
-  // If user doesn't have the required role, redirect to the home page
-  if (allowedRoles.length > 0 && user.role && !allowedRoles.includes(user.role)) {
+  // Allow admin users to access everything, otherwise check roles
+  if (user.role !== USER_ROLES.ADMIN && allowedRoles.length > 0 && user.role && !allowedRoles.includes(user.role)) {
     return (
       <Route path={path}>
         <div className="flex flex-col items-center justify-center min-h-screen">
