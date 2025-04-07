@@ -407,7 +407,6 @@ export default function Settings() {
                         name="currentPassword"
                         type="password" 
                         required
-                        minLength={6}
                       />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
