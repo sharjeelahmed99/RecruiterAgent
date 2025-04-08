@@ -68,8 +68,10 @@ export default function JobPositionForm({ onSuccess }: { onSuccess?: () => void 
   });
 
   const onSubmit = (data: any) => {
-    // Convert requirements from string to array
-    const requirements = data.requirements.split('\n').filter(Boolean);
+    // Ensure requirements is an array
+    const requirements = Array.isArray(data.requirements) 
+      ? data.requirements 
+      : data.requirements.split('\n').filter(Boolean);
     createJobPosition.mutate({ ...data, requirements });
   };
 
