@@ -8,6 +8,7 @@ import {
   insertInterviewSchema,
   insertInterviewQuestionSchema,
   generateInterviewSchema,
+  insertJobPositionSchema,
   USER_ROLES
 } from "@shared/schema";
 import { ZodError } from "zod";
