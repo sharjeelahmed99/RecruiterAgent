@@ -669,7 +669,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/job-positions", checkRole([USER_ROLES.HR]), async (req, res) => {
+  app.post("/api/job-positions", checkRole([USER_ROLES.HR, USER_ROLES.ADMIN]), async (req, res) => {
     try {
       const positionData = insertJobPositionSchema.parse(req.body);
       const newPosition = await storage.createJobPosition(positionData);
@@ -679,7 +679,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/job-positions/:id", checkRole([USER_ROLES.HR]), async (req, res) => {
+  app.delete("/api/job-positions/:id", checkRole([USER_ROLES.HR, USER_ROLES.ADMIN]), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
