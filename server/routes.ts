@@ -671,11 +671,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/job-positions", checkRole([USER_ROLES.HR, USER_ROLES.ADMIN]), async (req, res) => {
     try {
-      const positionData = insertJobPositionSchema.parse(req.body);
+      // Parse requirements from string to array if it's a string
+      const data = {
+        ...req.body,
+        requirements: Array.isArray(req.body.requirements) 
+          ? req.body.requirements 
+          : typeof req.body.requirements === 'string'
+          ? req.body.requirements.split('\n').map(r => r.trim()).filter(Boolean)
+          : []
+      };
+      
+      const positionData = insertJobPositionSchema.parse(data);
       const newPosition = await storage.createJobPosition(positionData);
       res.status(201).json(newPosition);
     } catch (err) {
-      handleZodError(err, res);
+      console.error("Job position creation error:", err);
+      if (err instanceof ZodError) {
+        const validationError = fromZodError(err);
+        return res.status(400).json({ message: validationError.message });
+      }
+      res.status(500).json({ message: "Failed to create job position" });
     }
   });
 
