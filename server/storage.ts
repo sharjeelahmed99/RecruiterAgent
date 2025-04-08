@@ -75,6 +75,7 @@ export interface IStorage {
   getJobPositions(): Promise<JobPosition[]>;
   createJobPosition(jobPosition: InsertJobPosition): Promise<JobPosition>;
   deleteJobPosition(id: number): Promise<boolean>;
+  getJobPosition(id: number): Promise<JobPosition | undefined>;
 
   // Specialized methods
   getRandomQuestions(filter: QuestionFilter): Promise<Question[]>;
@@ -641,6 +642,10 @@ export class MemStorage implements IStorage {
   // Job Position methods
   async getJobPositions(): Promise<JobPosition[]> {
     return Array.from(this.jobPositions.values());
+  }
+
+  async getJobPosition(id: number): Promise<JobPosition | undefined> {
+    return this.jobPositions.get(id);
   }
 
   async createJobPosition(jobPosition: InsertJobPosition): Promise<JobPosition> {

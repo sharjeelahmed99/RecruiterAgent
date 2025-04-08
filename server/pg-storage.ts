@@ -279,6 +279,26 @@ export class PgStorage implements IStorage {
     };
   }
 
+  // Job Position methods
+  async getJobPositions(): Promise<JobPosition[]> {
+    return await db.select().from(schema.jobPositions);
+  }
+
+  async getJobPosition(id: number): Promise<JobPosition | undefined> {
+    const positions = await db.select().from(schema.jobPositions).where(eq(schema.jobPositions.id, id));
+    return positions[0];
+  }
+
+  async createJobPosition(jobPosition: InsertJobPosition): Promise<JobPosition> {
+    const result = await db.insert(schema.jobPositions).values(jobPosition).returning();
+    return result[0];
+  }
+
+  async deleteJobPosition(id: number): Promise<boolean> {
+    const result = await db.delete(schema.jobPositions).where(eq(schema.jobPositions.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
   // Interview Question methods
   async getInterviewQuestions(interviewId: number): Promise<InterviewQuestion[]> {
     return await db.select()
