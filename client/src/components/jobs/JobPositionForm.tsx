@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
@@ -35,8 +34,20 @@ export default function JobPositionForm({ onSuccess }: { onSuccess?: () => void 
 
   const createJobPosition = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/job-positions", data);
-      return response.json();
+      try {
+        const response = await fetch('/api/job-positions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        });
+        if (!response.ok) throw new Error('Failed to create job position');
+        return response.json();
+      } catch (error) {
+        console.error('Error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/job-positions"] });
@@ -70,13 +81,6 @@ export default function JobPositionForm({ onSuccess }: { onSuccess?: () => void 
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <Button 
-              type="submit" 
-              className="w-full"
-              disabled={createJobPosition.isPending}
-            >
-              {createJobPosition.isPending ? "Creating..." : "Create Job Position"}
-            </Button>
             <FormField
               control={form.control}
               name="title"
