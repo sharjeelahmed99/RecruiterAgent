@@ -70,6 +70,13 @@ export default function JobPositionForm({ onSuccess }: { onSuccess?: () => void 
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={createJobPosition.isPending}
+            >
+              {createJobPosition.isPending ? "Creating..." : "Create Job Position"}
+            </Button>
             <FormField
               control={form.control}
               name="title"
