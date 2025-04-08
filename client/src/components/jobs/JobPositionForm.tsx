@@ -69,10 +69,22 @@ export default function JobPositionForm({ onSuccess }: { onSuccess?: () => void 
 
   const onSubmit = (data: any) => {
     // Ensure requirements is an array
-    const requirements = Array.isArray(data.requirements) 
-      ? data.requirements 
-      : data.requirements.split('\n').filter(Boolean);
-    createJobPosition.mutate({ ...data, requirements });
+    // Convert textarea input into array of strings
+    const requirements = data.requirements
+      .split('\n')
+      .map(r => r.trim())
+      .filter(Boolean);
+    
+    // Ensure we send proper data matching the schema
+    const formData = {
+      title: data.title,
+      department: data.department,
+      level: data.level,
+      location: data.location, 
+      description: data.description,
+      requirements: requirements
+    };
+    createJobPosition.mutate(formData);
   };
 
   return (
