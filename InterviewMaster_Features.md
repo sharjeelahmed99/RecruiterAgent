@@ -1,13 +1,11 @@
-# InterviewMaster Application Features
+# RecruitAI Application Features
 
 ## 1. AI-Powered Features
 
 ### A. Resume Processing & Auto-Population
 
 - Automatic candidate information extraction from resume uploads
-- Smart technology stack detection from resume filename
 - Auto-suggestion of relevant technologies based on resume content
-- Automatic email generation from candidate name
 - Support for multiple resume formats (PDF, DOC, DOCX)
 
 ### B. Technical Interviewer Matching
@@ -40,7 +38,6 @@
 - AI-powered overall score calculation
 - Automatic recommendation generation based on scores
 - Comprehensive interview insights and analytics
-- Performance trend analysis
 
 ## 2. General Features
 
@@ -49,9 +46,7 @@
 - Profile creation and management
 - Status tracking (new, in_progress, hired, rejected)
 - Interview history tracking
-- Document management (resume storage)
 - Candidate search and filtering
-- Bulk candidate import
 
 ### B. Interview Management
 
@@ -67,10 +62,7 @@
 
 - Comprehensive interview reports
 - PDF report generation
-- Score analytics
-- Performance tracking
 - Historical data analysis
-- Custom report templates
 - Export functionality
 
 ### D. User Role Management
@@ -80,13 +72,11 @@
 - Management/Director features
 - Administrator features
 - Role-based access control
-- Permission management
 
 ### E. Job Management
 
 - Job posting
 - Application tracking
-- Position management
 - Candidate-job matching
 - Job status updates
 - Application workflow
@@ -100,25 +90,20 @@
 - Technology-based categorization
 - Experience level matching
 - Question bank management
-- Question version control
 
 ### B. Interview Session Tools
 
 - Real-time scoring
 - Question skipping
 - Notes and feedback
-- Session recording
-- Time tracking
-- Screen sharing
-- Code editor integration
+- Session recording (next phase)
+- Time tracking (next phase)
 
 ### C. Reporting Tools
 
 - PDF report generation
 - Score visualization
 - Performance metrics
-- Historical data analysis
-- Custom report templates
 - Data export options
 
 ## 4. Administrative Features
@@ -128,43 +113,18 @@
 - System settings
 - Access control
 - Data management
-- Audit logging
-- System monitoring
-
-## 5. Security Features
-
-- Role-based access control
-- Data encryption
-- Secure file storage
-- Session management
-- Activity logging
-- Compliance tracking
 
 ## 6. Integration Features
 
 - Email integration
 - Calendar integration
-- Video conferencing
 - Document management
-- API access
 - Third-party integrations
 
 ## 7. Mobile Features
 
 - Responsive design
 - Mobile-friendly interface
-- Offline access
-- Push notifications
-- Mobile document scanning
-
-## 8. Support Features
-
-- Help documentation
-- User guides
-- Video tutorials
-- Support ticket system
-- FAQ section
-- Training materials
 
 ## Technical Requirements
 
@@ -178,9 +138,6 @@
 ### Supported File Formats
 
 - Resumes: PDF, DOC, DOCX
-- Images: JPG, PNG
-- Documents: PDF, DOC, DOCX
-- Video: MP4, WebM
 
 ## User Roles and Permissions
 
@@ -204,69 +161,10 @@
 
 - Report access
 - Analytics viewing
-- Performance monitoring
 - Decision making
-- Team management
 
 ### Administrator
 
-- System configuration
 - User management
 - Role assignment
 - Data management
-- System monitoring
-
-## AI Implementation Details
-
-### Resume Processing
-
-- Natural Language Processing for information extraction
-- Pattern recognition for technology stack detection
-- Machine learning for skill assessment
-- Automated scoring algorithms
-
-### Interviewer Matching
-
-- Machine learning algorithms for compatibility scoring
-- Availability optimization
-- Skill matching algorithms
-- Performance prediction
-
-### Question Generation
-
-- AI-powered question selection
-- Difficulty level adjustment
-- Topic relevance scoring
-- Dynamic question adaptation
-
-### Scoring System
-
-- Weighted scoring algorithms
-- Performance trend analysis
-- Comparative scoring
-- Automated recommendations
-
-## Support and Maintenance
-
-### Regular Updates
-
-- Feature updates
-- Security patches
-- Performance improvements
-- Bug fixes
-
-### Technical Support
-
-- 24/7 support availability
-- Email support
-- Phone support
-- Live chat
-- Knowledge base
-
-### Training
-
-- User training sessions
-- Admin training
-- Documentation
-- Video tutorials
-- Best practices guides

@@ -6,6 +6,7 @@ import path from "path";
 import fs from "fs";
 import { checkRole } from "../auth";
 import { USER_ROLES } from "@shared/schema";
+import { emailService } from "../services/emailService";
 
 const router = Router();
 
@@ -182,7 +183,39 @@ router.put("/applications/:id/status", checkRole([USER_ROLES.HR, USER_ROLES.ADMI
     }
     
     console.log(`Current candidate status: ${currentCandidate.status}`);
+
+    // If the application is accepted, send an acceptance email
+    if (validatedData.status === "accepted") {
+      // Get job details for the email
+      const job = await storage.getJobPosition(application.jobId);
+      
+      // Send acceptance notification email asynchronously
+      emailService.sendApplicationAcceptanceNotification(
+        currentCandidate.email,
+        currentCandidate.name,
+        job?.title || "Position",
+        "RecruitAI"
+      ).catch(error => {
+        console.error('Error sending acceptance email:', error);
+      });
+    }
     
+    // If the application is rejected, send a rejection email
+    if (validatedData.status === "rejected") {
+      // Get job details for the email
+      const job = await storage.getJobPosition(application.jobId);
+      
+      // Send rejection notification email asynchronously
+      emailService.sendApplicationRejectionNotification(
+        currentCandidate.email,
+        currentCandidate.name,
+        job?.title || "Position",
+        "RecruitAI"
+      ).catch(error => {
+        console.error('Error sending rejection email:', error);
+      });
+    }
+
     // Update candidate status based on application status
     if (validatedData.status === 'accepted') {
       console.log(`Updating candidate ${application.candidateId} status to in_progress`);
@@ -227,6 +260,19 @@ router.post("/applications", async (req, res) => {
       jobId: validatedData.jobId,
       status: "pending",
       coverLetter: validatedData.coverLetter,
+    });
+
+    // Get job details for the email
+    const job = await storage.getJobPosition(validatedData.jobId);
+    
+    // Send confirmation email asynchronously
+    emailService.sendJobApplicationConfirmation(
+      validatedData.email,
+      validatedData.fullName,
+      job?.title || "Position",
+      "RecruitAI"
+    ).catch(error => {
+      console.error('Error sending application confirmation email:', error);
     });
 
     res.status(201).json(application);
