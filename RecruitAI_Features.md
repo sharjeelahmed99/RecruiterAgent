@@ -90,6 +90,12 @@ The match score is calculated based on several factors:
 - Job status updates
 - Application workflow
 
+### F. Email Notifications
+
+- Real time notification for application status
+- Notify candidates for the confirmation of job application
+- Notify interviewers for the assigned interview.
+
 ## 3. Technical Features
 
 ### A. Question Management
