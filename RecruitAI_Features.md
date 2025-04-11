@@ -1,5 +1,7 @@
 # RecruitAI Application Features
 
+### Loom video Link: https://www.loom.com/share/bb74376b866d491a974850fccc99bcef?sid=503f2722-5199-48a2-a561-3badd13f373c
+
 ## 1. AI-Powered Features
 
 ### A. Resume Processing & Auto-Population
