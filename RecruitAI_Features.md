@@ -3,52 +3,62 @@
 ## 1. AI-Powered Features
 
 ### A. Resume Processing & Auto-Population
+
 - Automatic candidate information extraction from resume uploads
-- Smart technology stack detection from resume filename
 - Auto-suggestion of relevant technologies based on resume content
-- Automatic email generation from candidate name
 - Support for multiple resume formats (PDF, DOC, DOCX)
 
-### B. Technical Interviewer Matching
+### B. Candidate Score Matching
+
+The Candidate Score matching functionality is a core feature of RecruitAI that helps evaluate and match candidates with job positions based on their skills, experience, and other relevant factors. This system provides a quantitative measure of how well a candidate's profile aligns with job requirements.
+
+The match score is calculated based on several factors:
+
+- **Technical Skills Match**: Compares candidate's technologies with job requirements
+- **Experience Level**: Evaluates candidate's experience against job requirements
+
+### C. Technical Interviewer Matching
+
 - AI-based matching algorithm considering:
-  * Technology stack compatibility
-  * Experience level matching
-  * Availability matching
-  * Success rate consideration
-  * Language and specialization matching
+  - Technology stack compatibility
+  - Experience level matching
+  - Availability matching
+  - Success rate consideration
+  - Language and specialization matching
 - Real-time availability checking
 - Match score calculation and ranking
 
-### C. Interview Session Features
+### D. Interview Session Features
+
 - AI-generated interview questions based on:
-  * Candidate's technology stack
-  * Experience level
-  * Question type preferences
+  - Candidate's technology stack
+  - Experience level
+  - Question type preferences
 - Real-time scoring system
 - Automatic question recommendations
 - Dynamic question generation during interview
 
-### D. Interview Scoring & Analysis
+### E. Interview Scoring & Analysis
+
 - Automated scoring calculation for:
-  * Technical knowledge (0-5 scale)
-  * Problem-solving abilities (0-5 scale)
-  * Communication skills (0-5 scale)
+  - Technical knowledge (0-5 scale)
+  - Problem-solving abilities (0-5 scale)
+  - Communication skills (0-5 scale)
 - AI-powered overall score calculation
 - Automatic recommendation generation based on scores
 - Comprehensive interview insights and analytics
-- Performance trend analysis
 
 ## 2. General Features
 
 ### A. Candidate Management
+
 - Profile creation and management
 - Status tracking (new, in_progress, hired, rejected)
 - Interview history tracking
-- Document management (resume storage)
 - Candidate search and filtering
-- Bulk candidate import
 
 ### B. Interview Management
+
 - Interview scheduling
 - Question management
 - Score tracking
@@ -58,26 +68,24 @@
 - Email notifications
 
 ### C. Reporting & Analytics
+
 - Comprehensive interview reports
 - PDF report generation
-- Score analytics
-- Performance tracking
 - Historical data analysis
-- Custom report templates
 - Export functionality
 
 ### D. User Role Management
+
 - HR professional features
 - Technical interviewer features
 - Management/Director features
 - Administrator features
 - Role-based access control
-- Permission management
 
 ### E. Job Management
+
 - Job posting
 - Application tracking
-- Position management
 - Candidate-job matching
 - Job status updates
 - Application workflow
@@ -85,87 +93,65 @@
 ## 3. Technical Features
 
 ### A. Question Management
+
 - Custom question creation
 - Question filtering
 - Technology-based categorization
 - Experience level matching
 - Question bank management
-- Question version control
 
 ### B. Interview Session Tools
+
 - Real-time scoring
 - Question skipping
 - Notes and feedback
-- Session recording
-- Time tracking
-- Screen sharing
-- Code editor integration
+- Session recording (next phase)
+- Time tracking (next phase)
 
 ### C. Reporting Tools
+
 - PDF report generation
 - Score visualization
 - Performance metrics
-- Historical data analysis
-- Custom report templates
 - Data export options
 
 ## 4. Administrative Features
+
 - User management
 - Role assignment
 - System settings
 - Access control
 - Data management
-- Audit logging
-- System monitoring
-
-## 5. Security Features
-- Role-based access control
-- Data encryption
-- Secure file storage
-- Session management
-- Activity logging
-- Compliance tracking
 
 ## 6. Integration Features
+
 - Email integration
 - Calendar integration
-- Video conferencing
 - Document management
-- API access
 - Third-party integrations
 
 ## 7. Mobile Features
+
 - Responsive design
 - Mobile-friendly interface
-- Offline access
-- Push notifications
-- Mobile document scanning
-
-## 8. Support Features
-- Help documentation
-- User guides
-- Video tutorials
-- Support ticket system
-- FAQ section
-- Training materials
 
 ## Technical Requirements
 
 ### System Requirements
+
 - Modern web browser
 - Internet connection
 - Minimum screen resolution: 1280x720
 - Supported browsers: Chrome, Firefox, Safari, Edge
 
 ### Supported File Formats
+
 - Resumes: PDF, DOC, DOCX
-- Images: JPG, PNG
-- Documents: PDF, DOC, DOCX
-- Video: MP4, WebM
 
 ## User Roles and Permissions
 
 ### HR Professional
+
 - Full candidate management
 - Interview scheduling
 - Report generation
@@ -173,6 +159,7 @@
 - Application management
 
 ### Technical Interviewer
+
 - Interview conduction
 - Question management
 - Score submission
@@ -180,63 +167,13 @@
 - Report viewing
 
 ### Management/Director
+
 - Report access
 - Analytics viewing
-- Performance monitoring
 - Decision making
-- Team management
 
 ### Administrator
-- System configuration
+
 - User management
 - Role assignment
 - Data management
-- System monitoring
-
-## AI Implementation Details
-
-### Resume Processing
-- Natural Language Processing for information extraction
-- Pattern recognition for technology stack detection
-- Machine learning for skill assessment
-- Automated scoring algorithms
-
-### Interviewer Matching
-- Machine learning algorithms for compatibility scoring
-- Availability optimization
-- Skill matching algorithms
-- Performance prediction
-
-### Question Generation
-- AI-powered question selection
-- Difficulty level adjustment
-- Topic relevance scoring
-- Dynamic question adaptation
-
-### Scoring System
-- Weighted scoring algorithms
-- Performance trend analysis
-- Comparative scoring
-- Automated recommendations
-
-## Support and Maintenance
-
-### Regular Updates
-- Feature updates
-- Security patches
-- Performance improvements
-- Bug fixes
-
-### Technical Support
-- 24/7 support availability
-- Email support
-- Phone support
-- Live chat
-- Knowledge base
-
-### Training
-- User training sessions
-- Admin training
-- Documentation
-- Video tutorials
-- Best practices guides 
