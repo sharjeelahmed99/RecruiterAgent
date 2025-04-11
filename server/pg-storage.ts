@@ -16,7 +16,22 @@ import {
   InsertCandidate,
   InsertInterview,
   InsertInterviewQuestion,
-  QuestionFilter
+  QuestionFilter,
+  JobPosition,
+  InsertJobPosition,
+  JobApplication,
+  InsertJobApplication,
+  candidates,
+  jobApplications,
+  questions,
+  questionTypes,
+  experienceLevels,
+  technologies,
+  candidateTechnologies,
+  interviews,
+  interviewQuestions,
+  users,
+  jobPositions
 } from "@shared/schema";
 
 // Define additional insert types that aren't in the shared schema
@@ -37,33 +52,49 @@ type InsertQuestionType = {
 
 import * as schema from "../shared/schema";
 
+interface CandidateWithTechnologies {
+  id: number;
+  email: string;
+  name: string;
+  createdAt: Date | null;
+  status: "new" | "in_progress" | "hired" | "rejected";
+  phone: string | null;
+  notes: string | null;
+  updatedAt: Date | null;
+  lastInterviewDate: Date | null;
+  resumeFile: string | null;
+  technologies: string[];
+}
+
 export class PgStorage implements IStorage {
+  private readonly db = db;
+
   // User methods
   async getUser(id: number): Promise<User | undefined> {
-    const users = await db.select().from(schema.users).where(eq(schema.users.id, id));
+    const users = await this.db.select().from(schema.users).where(eq(schema.users.id, id));
     return users[0];
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const users = await db.select().from(schema.users).where(eq(schema.users.username, username));
+    const users = await this.db.select().from(schema.users).where(eq(schema.users.username, username));
     return users[0];
   }
 
   async getUsersByRole(role: string): Promise<User[]> {
-    return await db.select().from(schema.users).where(eq(schema.users.role, role));
+    return await this.db.select().from(schema.users).where(eq(schema.users.role, role));
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const result = await db.insert(schema.users).values(user).returning();
+    const result = await this.db.insert(schema.users).values(user).returning();
     return result[0];
   }
   
   async getUsers(): Promise<User[]> {
-    return await db.select().from(schema.users);
+    return await this.db.select().from(schema.users);
   }
   
   async updateUser(id: number, user: Partial<User>): Promise<User | undefined> {
-    const result = await db.update(schema.users)
+    const result = await this.db.update(schema.users)
       .set(user)
       .where(eq(schema.users.id, id))
       .returning();
@@ -71,57 +102,70 @@ export class PgStorage implements IStorage {
   }
   
   async deleteUser(id: number): Promise<boolean> {
-    const result = await db.delete(schema.users).where(eq(schema.users.id, id));
+    const result = await this.db.delete(schema.users).where(eq(schema.users.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
   }
 
   // Technology methods
   async getTechnologies(): Promise<Technology[]> {
-    return await db.select().from(schema.technologies);
+    return await this.db.select().from(schema.technologies);
   }
 
   async getTechnology(id: number): Promise<Technology | undefined> {
-    const technologies = await db.select().from(schema.technologies).where(eq(schema.technologies.id, id));
+    const technologies = await this.db.select().from(schema.technologies).where(eq(schema.technologies.id, id));
     return technologies[0];
+  }
+
+  async getCandidateTechnologies(candidateId: number): Promise<Technology[]> {
+    const result = await db.select({
+      id: technologies.id,
+      name: technologies.name,
+      description: technologies.description
+    })
+    .from(candidateTechnologies)
+    .innerJoin(technologies, eq(candidateTechnologies.technologyId, technologies.id))
+    .where(eq(candidateTechnologies.candidateId, candidateId));
+    
+    return result;
   }
 
   // Experience level methods
   async getExperienceLevels(): Promise<ExperienceLevel[]> {
-    return await db.select().from(schema.experienceLevels);
+    return await this.db.select().from(schema.experienceLevels);
   }
 
   async getExperienceLevel(id: number): Promise<ExperienceLevel | undefined> {
-    const levels = await db.select().from(schema.experienceLevels).where(eq(schema.experienceLevels.id, id));
+    const levels = await this.db.select().from(schema.experienceLevels).where(eq(schema.experienceLevels.id, id));
     return levels[0];
   }
 
   // Question type methods
   async getQuestionTypes(): Promise<QuestionType[]> {
-    return await db.select().from(schema.questionTypes);
+    return await this.db.select().from(schema.questionTypes);
   }
 
   async getQuestionType(id: number): Promise<QuestionType | undefined> {
-    const types = await db.select().from(schema.questionTypes).where(eq(schema.questionTypes.id, id));
+    const types = await this.db.select().from(schema.questionTypes).where(eq(schema.questionTypes.id, id));
     return types[0];
   }
 
   // Question methods
   async getQuestions(): Promise<Question[]> {
-    return await db.select().from(schema.questions);
+    return await this.db.select().from(schema.questions);
   }
 
   async getQuestion(id: number): Promise<Question | undefined> {
-    const questions = await db.select().from(schema.questions).where(eq(schema.questions.id, id));
+    const questions = await this.db.select().from(schema.questions).where(eq(schema.questions.id, id));
     return questions[0];
   }
 
   async createQuestion(question: InsertQuestion): Promise<Question> {
-    const result = await db.insert(schema.questions).values(question).returning();
+    const result = await this.db.insert(schema.questions).values(question).returning();
     return result[0];
   }
 
   async updateQuestion(id: number, question: Partial<Question>): Promise<Question | undefined> {
-    const result = await db.update(schema.questions)
+    const result = await this.db.update(schema.questions)
       .set(question)
       .where(eq(schema.questions.id, id))
       .returning();
@@ -129,12 +173,12 @@ export class PgStorage implements IStorage {
   }
 
   async deleteQuestion(id: number): Promise<boolean> {
-    const result = await db.delete(schema.questions).where(eq(schema.questions.id, id));
+    const result = await this.db.delete(schema.questions).where(eq(schema.questions.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
   }
 
   async getFilteredQuestions(filter: QuestionFilter): Promise<Question[]> {
-    let queryBuilder = db.select().from(schema.questions);
+    let queryBuilder = this.db.select().from(schema.questions);
     
     // Add filter conditions
     const conditions = [];
@@ -160,53 +204,150 @@ export class PgStorage implements IStorage {
 
   // Candidate methods
   async getCandidates(): Promise<Candidate[]> {
-    return await db.select().from(schema.candidates);
+    const result = await this.db.query.candidates.findMany();
+    return result.map(row => ({
+      ...row,
+      status: row.status || 'new' // Ensure status is never null
+    }));
   }
 
   async getCandidate(id: number): Promise<Candidate | undefined> {
-    const candidates = await db.select().from(schema.candidates).where(eq(schema.candidates.id, id));
-    return candidates[0];
+    const result = await this.db.query.candidates.findFirst({
+      where: eq(candidates.id, id)
+    });
+    
+    if (!result) return undefined;
+    
+    return {
+      ...result,
+      status: result.status || 'new' // Ensure status is never null
+    };
   }
 
   async createCandidate(candidate: InsertCandidate): Promise<Candidate> {
-    const result = await db.insert(schema.candidates).values(candidate).returning();
+    const result = await this.db.insert(candidates).values(candidate).returning();
     return result[0];
   }
 
   async updateCandidate(id: number, candidate: Partial<Candidate>): Promise<Candidate | undefined> {
-    const result = await db.update(schema.candidates)
+    const result = await this.db.update(candidates)
       .set(candidate)
-      .where(eq(schema.candidates.id, id))
+      .where(eq(candidates.id, id))
       .returning();
     return result[0];
   }
 
   async deleteCandidate(id: number): Promise<boolean> {
-    const result = await db.delete(schema.candidates).where(eq(schema.candidates.id, id));
+    const result = await this.db.delete(candidates).where(eq(candidates.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async getCandidateInterviews(candidateId: number): Promise<Interview[]> {
+    return await this.db.select()
+      .from(schema.interviews)
+      .where(eq(schema.interviews.candidateId, candidateId))
+      .orderBy(desc(schema.interviews.date));
   }
 
   // Interview methods
   async getInterviews(): Promise<Interview[]> {
-    return await db.select().from(schema.interviews);
+    const result = await this.db
+      .select({
+        id: schema.interviews.id,
+        title: schema.interviews.title,
+        candidateId: schema.interviews.candidateId,
+        date: schema.interviews.date,
+        status: schema.interviews.status,
+        notes: schema.interviews.notes,
+        overallScore: schema.interviews.overallScore,
+        technicalScore: schema.interviews.technicalScore,
+        problemSolvingScore: schema.interviews.problemSolvingScore,
+        communicationScore: schema.interviews.communicationScore,
+        recommendation: schema.interviews.recommendation,
+        assigneeId: schema.interviews.assigneeId,
+        position: schema.interviews.position,
+        technologies: schema.interviews.technologies,
+        createdAt: schema.interviews.createdAt,
+        createdByAdmin: schema.interviews.createdByAdmin,
+        candidate: {
+          id: schema.candidates.id,
+          name: schema.candidates.name,
+          email: schema.candidates.email,
+          phone: schema.candidates.phone
+        },
+        assignee: {
+          id: schema.users.id,
+          name: schema.users.name,
+          email: schema.users.email,
+          role: schema.users.role
+        }
+      })
+      .from(schema.interviews)
+      .leftJoin(schema.candidates, eq(schema.interviews.candidateId, schema.candidates.id))
+      .leftJoin(schema.users, eq(schema.interviews.assigneeId, schema.users.id));
+    
+    return result.map(row => ({
+      ...row,
+      assigneeId: row.assigneeId || null,
+      assignee: row.assignee?.id ? {
+        id: row.assignee.id,
+        name: row.assignee.name,
+        email: row.assignee.email,
+        role: row.assignee.role
+      } : null,
+      candidate: row.candidate || null
+    }));
   }
 
   async getInterviewsByAssignee(assigneeId: number): Promise<Interview[]> {
-    return await db.select().from(schema.interviews).where(eq(schema.interviews.assigneeId, assigneeId));
+    const result = await this.db
+      .select({
+        id: schema.interviews.id,
+        title: schema.interviews.title,
+        candidateId: schema.interviews.candidateId,
+        date: schema.interviews.date,
+        status: schema.interviews.status,
+        notes: schema.interviews.notes,
+        overallScore: schema.interviews.overallScore,
+        technicalScore: schema.interviews.technicalScore,
+        problemSolvingScore: schema.interviews.problemSolvingScore,
+        communicationScore: schema.interviews.communicationScore,
+        recommendation: schema.interviews.recommendation,
+        assigneeId: schema.interviews.assigneeId,
+        position: schema.interviews.position,
+        technologies: schema.interviews.technologies,
+        createdAt: schema.interviews.createdAt,
+        createdByAdmin: schema.interviews.createdByAdmin,
+        assignee: {
+          id: schema.users.id,
+          name: schema.users.name,
+          email: schema.users.email,
+          role: schema.users.role
+        }
+      })
+      .from(schema.interviews)
+      .leftJoin(schema.users, eq(schema.interviews.assigneeId, schema.users.id))
+      .where(eq(schema.interviews.assigneeId, assigneeId));
+    
+    return result.map(row => ({
+      ...row,
+      assigneeId: row.assigneeId || null,
+      assignee: row.assignee.id ? row.assignee : null
+    }));
   }
 
   async getInterview(id: number): Promise<Interview | undefined> {
-    const interviews = await db.select().from(schema.interviews).where(eq(schema.interviews.id, id));
+    const interviews = await this.db.select().from(schema.interviews).where(eq(schema.interviews.id, id));
     return interviews[0];
   }
 
   async createInterview(interview: InsertInterview): Promise<Interview> {
-    const result = await db.insert(schema.interviews).values(interview).returning();
+    const result = await this.db.insert(schema.interviews).values(interview).returning();
     return result[0];
   }
 
   async updateInterview(id: number, interview: Partial<Interview>): Promise<Interview | undefined> {
-    const result = await db.update(schema.interviews)
+    const result = await this.db.update(schema.interviews)
       .set(interview)
       .where(eq(schema.interviews.id, id))
       .returning();
@@ -214,13 +355,43 @@ export class PgStorage implements IStorage {
   }
 
   async deleteInterview(id: number): Promise<boolean> {
-    const result = await db.delete(schema.interviews).where(eq(schema.interviews.id, id));
+    const result = await this.db.delete(schema.interviews).where(eq(schema.interviews.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
   }
 
   async getInterviewWithDetails(id: number): Promise<InterviewWithDetails | undefined> {
-    // Get the interview
-    const interview = await this.getInterview(id);
+    // Get the interview with assignee information
+    const interviewResult = await this.db
+      .select({
+        id: schema.interviews.id,
+        title: schema.interviews.title,
+        candidateId: schema.interviews.candidateId,
+        date: schema.interviews.date,
+        status: schema.interviews.status,
+        notes: schema.interviews.notes,
+        overallScore: schema.interviews.overallScore,
+        technicalScore: schema.interviews.technicalScore,
+        problemSolvingScore: schema.interviews.problemSolvingScore,
+        communicationScore: schema.interviews.communicationScore,
+        recommendation: schema.interviews.recommendation,
+        assigneeId: schema.interviews.assigneeId,
+        position: schema.interviews.position,
+        technologies: schema.interviews.technologies,
+        createdAt: schema.interviews.createdAt,
+        createdByAdmin: schema.interviews.createdByAdmin,
+        hrNotes: schema.interviews.hrNotes,
+        assignee: {
+          id: schema.users.id,
+          name: schema.users.name,
+          email: schema.users.email,
+          role: schema.users.role
+        }
+      })
+      .from(schema.interviews)
+      .leftJoin(schema.users, eq(schema.interviews.assigneeId, schema.users.id))
+      .where(eq(schema.interviews.id, id));
+
+    const interview = interviewResult[0];
     if (!interview) {
       return undefined;
     }
@@ -275,53 +446,68 @@ export class PgStorage implements IStorage {
     return {
       ...interview,
       candidate,
-      questions: validQuestionDetails
+      questions: validQuestionDetails,
+      assignee: interview.assignee?.id ? {
+        id: interview.assignee.id,
+        name: interview.assignee.name,
+        email: interview.assignee.email,
+        role: interview.assignee.role
+      } : null
     };
   }
 
   // Job Position methods
   async getJobPositions(): Promise<JobPosition[]> {
-    return await db.select().from(schema.jobPositions);
+    return await this.db.select().from(schema.jobPositions);
   }
 
   async getJobPosition(id: number): Promise<JobPosition | undefined> {
-    const positions = await db.select().from(schema.jobPositions).where(eq(schema.jobPositions.id, id));
+    const positions = await this.db.select().from(schema.jobPositions).where(eq(schema.jobPositions.id, id));
     return positions[0];
   }
 
   async createJobPosition(jobPosition: InsertJobPosition): Promise<JobPosition> {
-    const result = await db.insert(schema.jobPositions).values(jobPosition).returning();
+    const result = await this.db.insert(schema.jobPositions).values(jobPosition).returning();
     return result[0];
   }
 
   async deleteJobPosition(id: number): Promise<boolean> {
-    const result = await db.delete(schema.jobPositions).where(eq(schema.jobPositions.id, id));
+    const result = await this.db.delete(schema.jobPositions).where(eq(schema.jobPositions.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  async updateJobPosition(id: number, jobPosition: Partial<JobPosition>): Promise<JobPosition | undefined> {
+    const result = await this.db
+      .update(schema.jobPositions)
+      .set(jobPosition)
+      .where(eq(schema.jobPositions.id, id))
+      .returning();
+    return result[0];
   }
 
   // Interview Question methods
   async getInterviewQuestions(interviewId: number): Promise<InterviewQuestion[]> {
-    return await db.select()
+    return await this.db.select()
       .from(schema.interviewQuestions)
       .where(eq(schema.interviewQuestions.interviewId, interviewId));
   }
 
   async getInterviewQuestion(id: number): Promise<InterviewQuestion | undefined> {
-    const questions = await db.select()
+    const questions = await this.db.select()
       .from(schema.interviewQuestions)
       .where(eq(schema.interviewQuestions.id, id));
     return questions[0];
   }
 
   async createInterviewQuestion(interviewQuestion: InsertInterviewQuestion): Promise<InterviewQuestion> {
-    const result = await db.insert(schema.interviewQuestions)
+    const result = await this.db.insert(schema.interviewQuestions)
       .values(interviewQuestion)
       .returning();
     return result[0];
   }
 
   async updateInterviewQuestion(id: number, interviewQuestion: Partial<InterviewQuestion>): Promise<InterviewQuestion | undefined> {
-    const result = await db.update(schema.interviewQuestions)
+    const result = await this.db.update(schema.interviewQuestions)
       .set(interviewQuestion)
       .where(eq(schema.interviewQuestions.id, id))
       .returning();
@@ -329,7 +515,7 @@ export class PgStorage implements IStorage {
   }
 
   async deleteInterviewQuestion(id: number): Promise<boolean> {
-    const result = await db.delete(schema.interviewQuestions)
+    const result = await this.db.delete(schema.interviewQuestions)
       .where(eq(schema.interviewQuestions.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
   }
@@ -462,81 +648,81 @@ export class PgStorage implements IStorage {
         name: "beginner",
         description: "Entry-level knowledge, 0-2 years of experience"
       };
-      await db.insert(schema.experienceLevels).values(beginner);
+      await this.db.insert(schema.experienceLevels).values(beginner);
 
       const intermediate: InsertExperienceLevel = {
         name: "intermediate",
         description: "Working knowledge, 2-5 years of experience"
       };
-      await db.insert(schema.experienceLevels).values(intermediate);
+      await this.db.insert(schema.experienceLevels).values(intermediate);
 
       const advanced: InsertExperienceLevel = {
         name: "advanced",
         description: "Expert knowledge, 5+ years of experience"
       };
-      await db.insert(schema.experienceLevels).values(advanced);
+      await this.db.insert(schema.experienceLevels).values(advanced);
 
       // Add technologies
       const react: InsertTechnology = {
         name: "React",
         description: "A JavaScript library for building user interfaces"
       };
-      await db.insert(schema.technologies).values(react);
+      await this.db.insert(schema.technologies).values(react);
 
       const angular: InsertTechnology = {
         name: "Angular",
         description: "A platform for building mobile and desktop web applications"
       };
-      await db.insert(schema.technologies).values(angular);
+      await this.db.insert(schema.technologies).values(angular);
 
       const vue: InsertTechnology = {
         name: "Vue",
         description: "A progressive framework for building user interfaces"
       };
-      await db.insert(schema.technologies).values(vue);
+      await this.db.insert(schema.technologies).values(vue);
 
       const node: InsertTechnology = {
         name: "Node.js",
         description: "A JavaScript runtime built on Chrome's V8 JavaScript engine"
       };
-      await db.insert(schema.technologies).values(node);
+      await this.db.insert(schema.technologies).values(node);
 
       const python: InsertTechnology = {
         name: "Python",
         description: "A programming language that lets you work quickly and integrate systems effectively"
       };
-      await db.insert(schema.technologies).values(python);
+      await this.db.insert(schema.technologies).values(python);
 
       const dotnet: InsertTechnology = {
         name: ".NET",
         description: "A free, cross-platform, open source developer platform for building many different types of applications"
       };
-      await db.insert(schema.technologies).values(dotnet);
+      await this.db.insert(schema.technologies).values(dotnet);
 
       // Add question types
       const algorithms: InsertQuestionType = {
         name: "algorithms",
         description: "Algorithm design and analysis"
       };
-      await db.insert(schema.questionTypes).values(algorithms);
+      await this.db.insert(schema.questionTypes).values(algorithms);
 
       const database: InsertQuestionType = {
         name: "database",
         description: "Database design and query optimization"
       };
-      await db.insert(schema.questionTypes).values(database);
+      await this.db.insert(schema.questionTypes).values(database);
 
       const framework: InsertQuestionType = {
         name: "framework",
         description: "Framework-specific knowledge and concepts"
       };
-      await db.insert(schema.questionTypes).values(framework);
+      await this.db.insert(schema.questionTypes).values(framework);
 
       const architecture: InsertQuestionType = {
         name: "architecture",
         description: "Software architecture and design patterns"
       };
-      await db.insert(schema.questionTypes).values(architecture);
+      await this.db.insert(schema.questionTypes).values(architecture);
 
       // Add sample questions for all technology stacks
       const sampleQuestions = [
@@ -712,7 +898,7 @@ export class PgStorage implements IStorage {
       ];
 
       for (const question of sampleQuestions) {
-        await db.insert(schema.questions).values(question);
+        await this.db.insert(schema.questions).values(question);
       }
 
       // Add a sample candidate
@@ -720,9 +906,9 @@ export class PgStorage implements IStorage {
         name: "John Smith",
         email: "john.smith@example.com",
         phone: "123-456-7890",
-        resumeUrl: "https://example.com/resume/john-smith"
+        status: "new"
       };
-      await db.insert(schema.candidates).values(johnSmith);
+      await this.db.insert(candidates).values(johnSmith);
 
       // Add a sample interview
       const interview: InsertInterview = {
@@ -737,7 +923,7 @@ export class PgStorage implements IStorage {
         overallScore: null,
         recommendation: null
       };
-      const interviewResult = await db.insert(schema.interviews).values(interview).returning();
+      const interviewResult = await this.db.insert(schema.interviews).values(interview).returning();
       
       // Add sample interview questions
       const interviewQuestions = [
@@ -756,7 +942,7 @@ export class PgStorage implements IStorage {
       ];
 
       for (const iq of interviewQuestions) {
-        await db.insert(schema.interviewQuestions).values(iq);
+        await this.db.insert(schema.interviewQuestions).values(iq);
       }
 
       // Add a default user
@@ -766,13 +952,52 @@ export class PgStorage implements IStorage {
         email: "admin@example.com",
         role: "admin"
       };
-      await db.insert(schema.users).values(defaultUser);
+      await this.db.insert(schema.users).values(defaultUser);
 
       console.log("Database initialized with sample data");
     } catch (error) {
       console.error("Error initializing database:", error);
       throw error;
     }
+  }
+
+  // Job Application methods
+  async getJobApplications(jobId: number): Promise<JobApplication[]> {
+    let query = this.db
+      .select()
+      .from(schema.jobApplications)
+      .orderBy(desc(schema.jobApplications.createdAt));
+
+    if (jobId > 0) {
+      query = query.where(eq(schema.jobApplications.jobId, jobId));
+    }
+
+    return await query;
+  }
+
+  async getJobApplication(id: number): Promise<JobApplication | undefined> {
+    const applications = await this.db
+      .select()
+      .from(schema.jobApplications)
+      .where(eq(schema.jobApplications.id, id));
+    return applications[0];
+  }
+
+  async createJobApplication(application: InsertJobApplication): Promise<JobApplication> {
+    const result = await this.db
+      .insert(schema.jobApplications)
+      .values(application)
+      .returning();
+    return result[0];
+  }
+
+  async updateJobApplication(id: number, application: Partial<JobApplication>): Promise<JobApplication | undefined> {
+    const result = await this.db
+      .update(schema.jobApplications)
+      .set(application)
+      .where(eq(schema.jobApplications.id, id))
+      .returning();
+    return result[0];
   }
 }
 

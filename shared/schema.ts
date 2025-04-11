@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -59,12 +59,14 @@ export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
 export const candidates = pgTable("candidates", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  email: text("email"),
+  email: text("email").notNull(),
   phone: text("phone"),
   notes: text("notes"),
+  status: text("status", { enum: ["new", "in_progress", "hired", "rejected"] }).notNull(),
   resumeUrl: text("resume_url"),
-  resumeFile: text("resume_file"), // Path to the uploaded resume file
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  lastInterviewDate: timestamp("last_interview_date"),
 });
 
 export const insertCandidateSchema = createInsertSchema(candidates);
@@ -75,22 +77,32 @@ export type InsertCandidate = z.infer<typeof insertCandidateSchema>;
 export const interviews = pgTable("interviews", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
-  candidateId: integer("candidate_id").notNull(),
+  candidateId: integer("candidate_id").notNull().references(() => candidates.id),
   date: timestamp("date").notNull(),
-  assigneeId: integer("assignee_id"), // ID of the user assigned to conduct the interview
-  status: text("status").notNull(), // "scheduled", "in_progress", "completed"
+  status: text("status").notNull().default("scheduled"),
   notes: text("notes"),
   overallScore: integer("overall_score"),
   technicalScore: integer("technical_score"),
   problemSolvingScore: integer("problem_solving_score"),
   communicationScore: integer("communication_score"),
   recommendation: text("recommendation"),
+  assigneeId: integer("assignee_id").references(() => users.id),
+  position: text("position"),
+  technologies: text("technologies").array(),
   createdAt: timestamp("created_at").defaultNow(),
+  createdByAdmin: boolean("created_by_admin").notNull().default(false),
+  hrNotes: text("hr_notes")
 });
 
 export const insertInterviewSchema = createInsertSchema(interviews);
-export type Interview = typeof interviews.$inferSelect;
-export type InsertInterview = z.infer<typeof insertInterviewSchema>;
+export type Interview = typeof interviews.$inferSelect & {
+  candidate?: Candidate | null;
+  assignee?: User | null;
+  questions?: InterviewQuestion[];
+  hrNotes?: string | null;
+};
+
+export type InsertInterview = typeof interviews.$inferInsert;
 
 // INTERVIEW QUESTIONS TABLE
 export const interviewQuestions = pgTable("interview_questions", {
@@ -184,8 +196,33 @@ export const jobPositions = pgTable("job_positions", {
   description: text("description").notNull(),
   requirements: json("requirements").notNull().$type<string[]>(),
   createdAt: timestamp("created_at").defaultNow(),
+  active: boolean("active").notNull().default(true),
 });
 
 export const insertJobPositionSchema = createInsertSchema(jobPositions);
 export type JobPosition = typeof jobPositions.$inferSelect;
 export type InsertJobPosition = z.infer<typeof insertJobPositionSchema>;
+
+export const candidateTechnologies = pgTable('candidate_technologies', {
+  id: serial('id').primaryKey(),
+  candidateId: integer('candidate_id').notNull().references(() => candidates.id),
+  technologyId: integer('technology_id').notNull().references(() => technologies.id)
+});
+
+// Create enum for application status
+export const applicationStatusEnum = pgEnum('application_status', ['pending', 'reviewed', 'accepted', 'rejected']);
+
+// Job Applications table
+export const jobApplications = pgTable("job_applications", {
+  id: serial("id").primaryKey(),
+  candidateId: integer("candidate_id").notNull().references(() => candidates.id),
+  jobId: integer("job_id").notNull().references(() => jobPositions.id),
+  status: applicationStatusEnum("status").notNull().default('pending'),
+  coverLetter: text("cover_letter"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertJobApplicationSchema = createInsertSchema(jobApplications);
+export type JobApplication = typeof jobApplications.$inferSelect;
+export type InsertJobApplication = z.infer<typeof insertJobApplicationSchema>;

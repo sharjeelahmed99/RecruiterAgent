@@ -66,7 +66,7 @@ export default function AuthPage() {
       {/* Hero section */}
       <div className="hidden md:flex md:w-1/2 bg-indigo-700 text-white flex-col items-center justify-center p-12">
         <div className="max-w-lg">
-          <h1 className="text-4xl font-bold mb-6">Interview Assistant</h1>
+          <h1 className="text-4xl font-bold mb-6">RecruitAI</h1>
           <p className="text-xl mb-8">
             A comprehensive platform for HR professionals and technical interviewers to streamline
             the interview process, manage candidates, and generate insightful reports.

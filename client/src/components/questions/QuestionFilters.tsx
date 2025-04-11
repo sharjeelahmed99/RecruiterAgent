@@ -3,8 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { PlusIcon, PlayIcon } from "lucide-react";
+import { PlusIcon, PlayIcon, BrainIcon } from "lucide-react";
 import { QuestionFilter } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 
 interface QuestionFiltersProps {
   onGenerateQuestions: (filters: QuestionFilter) => void;
@@ -29,6 +30,7 @@ export default function QuestionFilters({
   onCandidateChange,
   onTitleChange
 }: QuestionFiltersProps) {
+  const { toast } = useToast();
   const [experienceLevelId, setExperienceLevelId] = useState<number | undefined>(undefined);
   const [technologyId, setTechnologyId] = useState<number | undefined>(undefined);
   const [questionTypeId, setQuestionTypeId] = useState<number | undefined>(undefined);
@@ -217,6 +219,20 @@ export default function QuestionFilters({
         >
           <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
           {showStartButton ? 'Preview Questions' : 'Generate Questions'}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            toast({
+              title: "Coming Soon",
+              description: "AI-powered question generation will be available in the next phase. This feature will automatically generate relevant questions based on the selected technologies and difficulty levels.",
+            });
+          }}
+          className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          <BrainIcon className="-ml-1 mr-2 h-5 w-5" />
+          Generate with AI
         </Button>
       </div>
     </div>

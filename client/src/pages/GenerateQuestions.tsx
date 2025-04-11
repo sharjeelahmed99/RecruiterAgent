@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { QuestionFilter } from "@shared/schema";
+import QuestionFilterUI from "@/components/QuestionFilter";
 
 export default function GenerateQuestions() {
   const [, navigate] = useLocation();
@@ -18,6 +19,12 @@ export default function GenerateQuestions() {
   const [candidateName, setCandidateName] = useState("");
   const [interviewTitle, setInterviewTitle] = useState("");
   const [showCreateInterview, setShowCreateInterview] = useState(false);
+  const [filters, setFilters] = useState<QuestionFilter>({
+    experienceLevelId: 2, // Default to intermediate
+    technologyId: 1, // Default to first technology
+    questionTypeId: undefined,
+    count: 5
+  });
 
   const { data: candidates, isLoading: isLoadingCandidates } = useQuery<any[]>({
     queryKey: ["/api/candidates"],
@@ -167,6 +174,7 @@ export default function GenerateQuestions() {
       </div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+        <QuestionFilterUI filters={filters} onChange={setFilters} />
         <QuestionFilters onGenerateQuestions={handleGenerateQuestions} isGenerating={isGenerating} />
         
         {questions.length > 0 && (

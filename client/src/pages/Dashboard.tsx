@@ -2,20 +2,23 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, BarChartIcon, ClipboardListIcon, HelpCircleIcon, UserIcon } from "lucide-react";
+import { BarChart, BarChartIcon, ClipboardListIcon, UserIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/use-auth";
+import { format } from "date-fns";
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  
   const { data: interviews, isLoading: isLoadingInterviews } = useQuery<any[]>({
-    queryKey: ["/api/interviews"],
+    queryKey: ["/api/interviews", user?.role],
+    staleTime: 0, // Always consider the data stale
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnMount: true, // Refetch when component mounts
   });
 
   const { data: candidates, isLoading: isLoadingCandidates } = useQuery<any[]>({
     queryKey: ["/api/candidates"],
-  });
-
-  const { data: questions, isLoading: isLoadingQuestions } = useQuery<any[]>({
-    queryKey: ["/api/questions"],
   });
 
   const getInterviewStatusCounts = () => {
@@ -37,7 +40,7 @@ export default function Dashboard() {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
         <div className="my-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {/* Total Interviews */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -82,49 +85,15 @@ export default function Dashboard() {
                 )}
               </CardContent>
             </Card>
-            
-            {/* Total Questions */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Questions</CardTitle>
-                <HelpCircleIcon className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                {isLoadingQuestions ? (
-                  <Skeleton className="h-7 w-12" />
-                ) : (
-                  <div className="text-2xl font-bold">{questions?.length || 0}</div>
-                )}
-              </CardContent>
-            </Card>
           </div>
         </div>
         
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 my-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Generate Questions</CardTitle>
-              <CardDescription>Create questions based on experience, technology, and type</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Quickly generate relevant technical interview questions tailored to your needs.
-              </p>
-            </CardContent>
-            <CardFooter>
-              <Button asChild className="w-full">
-                <Link href="/generate-questions">
-                  Get Started
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
-          
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 my-6">
           <Card>
             <CardHeader>
               <CardTitle>Recent Interviews</CardTitle>
-              <CardDescription>View and manage your recent interview sessions</CardDescription>
+              <CardDescription>Your last 5 completed interviews</CardDescription>
             </CardHeader>
             <CardContent>
               {isLoadingInterviews ? (
@@ -132,30 +101,48 @@ export default function Dashboard() {
                   <Skeleton className="h-5 w-full" />
                   <Skeleton className="h-5 w-full" />
                   <Skeleton className="h-5 w-full" />
+                  <Skeleton className="h-5 w-full" />
+                  <Skeleton className="h-5 w-full" />
                 </div>
               ) : interviews && interviews.length > 0 ? (
-                <ul className="space-y-2 text-sm">
-                  {interviews.slice(0, 3).map(interview => (
-                    <li key={interview.id} className="flex justify-between">
-                      <span className="text-muted-foreground">{interview.title}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-xs ${
-                        interview.status === 'completed' ? 'bg-green-100 text-green-800' : 
-                        interview.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : 
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {interview.status.replace('_', ' ')}
-                      </span>
-                    </li>
-                  ))}
+                <ul className="space-y-3 text-sm">
+                  {interviews
+                    .filter(interview => interview.status === 'completed')
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .slice(0, 5)
+                    .map(interview => (
+                      <li key={interview.id} className="flex flex-col">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-900 font-medium truncate mr-4">{interview.title}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(interview.date), "MMM d, yyyy")}
+                          </span>
+                        </div>
+                        <div className="flex items-center mt-1">
+                          <span className={`px-2 py-0.5 rounded-full text-xs ${
+                            interview.status === 'completed' ? 'bg-purple-100 text-purple-800' : 
+                            interview.status === 'in_progress' ? 'bg-green-100 text-green-800' : 
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            {interview.status.replace('_', ' ')}
+                          </span>
+                          {interview.overallScore !== null && (
+                            <span className="ml-2 text-xs text-gray-500">
+                              Score: {interview.overallScore}/5
+                            </span>
+                          )}
+                        </div>
+                      </li>
+                    ))}
                 </ul>
               ) : (
-                <p className="text-sm text-muted-foreground">No interviews found.</p>
+                <p className="text-sm text-muted-foreground">No completed interviews found.</p>
               )}
             </CardContent>
             <CardFooter>
-              <Button variant="outline" asChild className="w-full">
+              <Button asChild className="w-full">
                 <Link href="/interviews">
-                  View All
+                  View All Interviews
                 </Link>
               </Button>
             </CardFooter>
@@ -163,18 +150,53 @@ export default function Dashboard() {
           
           <Card>
             <CardHeader>
-              <CardTitle>Start New Interview</CardTitle>
-              <CardDescription>Create and conduct a new interview session</CardDescription>
+              <CardTitle>Upcoming Interviews</CardTitle>
+              <CardDescription>Your next 5 scheduled interviews</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Set up a new interview with custom questions for your candidate.
-              </p>
+              {isLoadingInterviews ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-5 w-full" />
+                  <Skeleton className="h-5 w-full" />
+                  <Skeleton className="h-5 w-full" />
+                  <Skeleton className="h-5 w-full" />
+                  <Skeleton className="h-5 w-full" />
+                </div>
+              ) : interviews && interviews.length > 0 ? (
+                <ul className="space-y-3 text-sm">
+                  {interviews
+                    .filter(interview => interview.status === 'scheduled')
+                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                    .slice(0, 5)
+                    .map(interview => (
+                      <li key={interview.id} className="flex flex-col">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-900 font-medium truncate mr-4">{interview.title}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(interview.date), "MMM d, yyyy")}
+                          </span>
+                        </div>
+                        <div className="flex items-center mt-1">
+                          <span className="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800">
+                            Scheduled
+                          </span>
+                          {interview.assignee && (
+                            <span className="ml-2 text-xs text-gray-500">
+                              Interviewer: {interview.assignee.name}
+                            </span>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">No upcoming interviews found.</p>
+              )}
             </CardContent>
             <CardFooter>
               <Button asChild className="w-full">
-                <Link href="/generate-questions">
-                  New Interview
+                <Link href="/schedule-interview">
+                  Schedule New Interview
                 </Link>
               </Button>
             </CardFooter>

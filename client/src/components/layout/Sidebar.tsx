@@ -8,7 +8,9 @@ import {
   XIcon,
   FileEditIcon,
   UsersIcon,
-  BriefcaseIcon
+  BriefcaseIcon,
+  UserIcon,
+  FileTextIcon
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -31,17 +33,27 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
       icon: HomeIcon,
     },
     {
-      name: "Create Profile",
-      path: "/start-interview",
+      name: "Candidates",
+      path: "/candidates",
+      icon: UserIcon,
+    },
+    {
+      name: "Job Applicants",
+      path: "/job-applicants",
+      icon: FileTextIcon,
+    },
+    {
+      name: "Schedule an Interview",
+      path: "/schedule-interview",
       icon: HelpCircleIcon,
     },
     {
-      name: "Open Jobs",
+      name: "Job Openings",
       path: "/open-jobs",
       icon: BriefcaseIcon,
     },
     {
-      name: "Custom Questions",
+      name: "Questions Library",
       path: "/custom-questions",
       icon: FileEditIcon,
     },
@@ -74,7 +86,7 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
               <XIcon className="h-6 w-6" />
             </button>
           )}
-          <h1 className="text-white text-xl font-bold">Interview Assistant</h1>
+          <h1 className="text-white text-xl font-bold">RecruitAI</h1>
         </div>
         <div className="flex-1 flex flex-col overflow-y-auto">
           <nav className="flex-1 px-2 py-4 bg-indigo-800 space-y-1">

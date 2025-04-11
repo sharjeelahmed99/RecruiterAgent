@@ -9,12 +9,31 @@ import QuestionsList from "@/components/questions/QuestionsList";
 import InterviewSummary from "@/components/interviews/InterviewSummary";
 import { QuestionFilter } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import QuestionFilterUI from "@/components/QuestionFilter";
+import InterviewTimer from "@/components/interviews/InterviewTimer";
+import { PlayIcon, XCircleIcon } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export default function InterviewSession() {
   const { id } = useParams();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const interviewId = parseInt(id || "0");
+  const { user } = useAuth();
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
   const { data: interview, isLoading } = useQuery<any>({
     queryKey: [`/api/interviews/${interviewId}/details`],
@@ -49,7 +68,7 @@ export default function InterviewSession() {
       const questions = await questionsResponse.json();
       
       // 2. Add them to the interview
-      await Promise.all(questions.map(question => 
+      await Promise.all(questions.map((question: { id: number }) => 
         apiRequest("POST", "/api/interview-questions", {
           interviewId,
           questionId: question.id,
@@ -118,6 +137,30 @@ export default function InterviewSession() {
     },
   });
 
+  const { mutate: updateInterviewStatus } = useMutation({
+    mutationFn: async ({ id, status }: { id: number, status: string }) => {
+      const response = await apiRequest("PUT", `/api/interviews/${id}`, { status });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/interviews/${interviewId}/details`] });
+      toast({
+        title: "Interview status updated",
+        description: `Interview status has been updated to ${status}.`,
+        variant: "default",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error updating interview status",
+        description: error.message || "Failed to update interview status. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [interviewStartTime, setInterviewStartTime] = useState<Date | undefined>(undefined);
+
   const handleScoreChange = (id: number, score: number, notes: string) => {
     console.log(`Updating score for question ${id} to ${score} with notes: ${notes}`);
     updateQuestionScore({ id, score, notes });
@@ -138,6 +181,25 @@ export default function InterviewSession() {
 
   const handleSaveSummary = (data: any) => {
     queryClient.invalidateQueries({ queryKey: [`/api/interviews/${interviewId}/details`] });
+  };
+
+  const handleStartInterview = () => {
+    if (interview.status === "scheduled") {
+      // Update interview status to in_progress
+      updateInterviewStatus({
+        id: interviewId,
+        status: "in_progress"
+      });
+      setInterviewStartTime(new Date());
+    }
+  };
+
+  const handleCancelInterview = () => {
+    updateInterviewStatus({
+      id: interviewId,
+      status: "cancelled"
+    });
+    setIsCancelDialogOpen(false);
   };
 
   if (isLoading) {
@@ -167,7 +229,41 @@ export default function InterviewSession() {
   return (
     <div className="py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-        <h1 className="text-2xl font-semibold text-gray-900">Interview Session</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-semibold text-gray-900">Interview Session</h1>
+          <div className="flex items-center gap-2">
+            {interview.status === "in_progress" && (
+              <InterviewTimer startTime={interviewStartTime} />
+            )}
+            {(user?.role === "HR" || user?.role === "admin") && 
+             (interview.status === "scheduled" || interview.status === "in_progress") && (
+              <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="bg-red-50 text-red-700 hover:bg-red-100">
+                    <XCircleIcon className="mr-2 h-4 w-4" />
+                    Cancel Interview
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Cancel Interview</DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to cancel this interview? This action cannot be undone.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsCancelDialogOpen(false)}>
+                      No, Keep Interview
+                    </Button>
+                    <Button variant="destructive" onClick={handleCancelInterview}>
+                      Yes, Cancel Interview
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
+        </div>
       </div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
@@ -180,10 +276,25 @@ export default function InterviewSession() {
           isGeneratingReport={isGeneratingReport}
         />
         
-        <QuestionFilters 
-          onGenerateQuestions={handleGenerateMoreQuestions} 
-          isGenerating={isGeneratingQuestions}
-        />
+        {interview.status === "scheduled" && (
+          <div className="mt-6">
+            <Button
+              onClick={handleStartInterview}
+              className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
+            >
+              <PlayIcon className="mr-2 h-4 w-4" />
+              Start Interview
+            </Button>
+          </div>
+        )}
+        
+        <div className="mt-6">
+          <QuestionFilters 
+            onGenerateQuestions={handleGenerateMoreQuestions} 
+            isGenerating={isGeneratingQuestions}
+            showStartButton={false}
+          />
+        </div>
         
         <QuestionsList
           questions={interview.questions}
@@ -204,6 +315,7 @@ export default function InterviewSession() {
           notes={interview.notes}
           recommendation={interview.recommendation}
           onSaveSummary={handleSaveSummary}
+          status={interview.status}
         />
       </div>
     </div>

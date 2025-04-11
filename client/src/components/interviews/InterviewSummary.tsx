@@ -18,6 +18,7 @@ interface InterviewSummaryProps {
   notes: string | null;
   recommendation: string | null;
   onSaveSummary: (data: any) => void;
+  status: string;
 }
 
 export default function InterviewSummary({
@@ -28,7 +29,8 @@ export default function InterviewSummary({
   overallScore = 0,
   notes = "",
   recommendation = "consider",
-  onSaveSummary
+  onSaveSummary,
+  status
 }: InterviewSummaryProps) {
   const [interviewNotes, setInterviewNotes] = useState(notes || "");
   const [selectedRecommendation, setSelectedRecommendation] = useState(recommendation || "consider");
@@ -333,28 +335,31 @@ export default function InterviewSummary({
                 <SelectItem value="hire">Hire</SelectItem>
                 <SelectItem value="consider">Consider</SelectItem>
                 <SelectItem value="pass">Pass</SelectItem>
+                <SelectItem value="not_recommended">Not Recommended</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
       </div>
       
-      <div className="mt-6 flex justify-end space-x-3">
-        <Button
-          variant="outline"
-          onClick={handleSaveDraft}
-          disabled={isPending || isSubmitting}
-        >
-          Save Draft
-        </Button>
-        <Button
-          variant="default"
-          onClick={handleSubmitEvaluation}
-          disabled={isPending || isSubmitting}
-        >
-          Submit Evaluation
-        </Button>
-      </div>
+      {status !== "cancelled" && (
+        <div className="mt-6 flex justify-end space-x-3">
+          <Button
+            variant="outline"
+            onClick={handleSaveDraft}
+            disabled={isPending || isSubmitting}
+          >
+            Save Draft
+          </Button>
+          <Button
+            variant="default"
+            onClick={handleSubmitEvaluation}
+            disabled={isPending || isSubmitting}
+          >
+            Submit Evaluation
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

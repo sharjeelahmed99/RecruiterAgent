@@ -1,72 +1,49 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Route } from "wouter";
 import { type Question } from "@shared/schema";
-
+import { apiRequest } from "@/lib/queryClient";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import CustomQuestionForm from "@/components/questions/CustomQuestionForm";
-import QuestionsList from "@/components/questions/QuestionsList";
+import { Card, CardContent } from "@/components/ui/card";
+import AddQuestion from "@/components/questions/AddQuestion";
+import ManageQuestions from "@/components/questions/ManageQuestions";
 
 export default function CustomQuestions() {
   const [activeTab, setActiveTab] = useState("add");
-  
-  // Fetch custom questions (filtering on the client side is fine for this feature)
-  const { data: questions = [], isLoading: questionsLoading } = useQuery<Question[]>({
+
+  const { data: questions, isLoading } = useQuery<Question[]>({
     queryKey: ["/api/questions"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/questions");
+      return response.json();
+    },
   });
-  
-  // Filter to show only custom questions
-  const customQuestions = questions.filter((q: Question) => q.isCustom === true);
-  
+
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-6">Custom Questions</h1>
-      
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2 mb-8">
-          <TabsTrigger value="add">Add Question</TabsTrigger>
-          <TabsTrigger value="manage">Manage Questions</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="add" className="py-4">
-          <CustomQuestionForm />
-        </TabsContent>
-        
-        <TabsContent value="manage" className="py-4">
+    <div className="py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+        <h1 className="text-2xl font-semibold text-gray-900">Questions Library</h1>
+        <div className="mt-8">
           <Card>
-            <CardHeader>
-              <CardTitle>Custom Questions Library</CardTitle>
-              <CardDescription>
-                View and manage your custom interview questions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {customQuestions.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-gray-500 mb-4">No custom questions found</p>
-                  <p className="text-sm text-gray-400">
-                    Create your first custom question using the "Add Question" tab
-                  </p>
-                </div>
-              ) : (
-                <QuestionsList 
-                  questions={customQuestions} 
-                  isLoading={questionsLoading}
-                  showAnswers={true}
-                  showScoreTypes={true}
-                />
-              )}
+            <CardContent className="p-6">
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="mb-6">
+                  <TabsTrigger value="add">Add Question</TabsTrigger>
+                  <TabsTrigger value="manage">Manage Questions</TabsTrigger>
+                </TabsList>
+                <TabsContent value="add">
+                  <AddQuestion />
+                </TabsContent>
+                <TabsContent value="manage">
+                  <ManageQuestions 
+                    questions={questions || []} 
+                    isLoading={isLoading} 
+                  />
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   );
 }

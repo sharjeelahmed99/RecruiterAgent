@@ -16,7 +16,7 @@ const pool = new Pool({
   user: connectionConfig.user || process.env.PGUSER,
   password: connectionConfig.password || process.env.PGPASSWORD,
   database: connectionConfig.database || process.env.PGDATABASE,
-  ssl: { rejectUnauthorized: false },
+  ssl: false
 });
 
 // Create drizzle database instance with our schema

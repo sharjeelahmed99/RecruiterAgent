@@ -50,7 +50,7 @@ export default function JobPositionForm({ onSuccess }: { onSuccess?: () => void 
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/job-positions"] });
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
       toast({
         title: "Success",
         description: "Job position created successfully",

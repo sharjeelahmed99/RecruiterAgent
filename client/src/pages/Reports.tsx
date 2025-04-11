@@ -10,14 +10,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { Filter, SearchIcon } from "lucide-react";
 import InterviewReport from "@/components/reports/InterviewReport";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Reports() {
   const [selectedInterview, setSelectedInterview] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const { user } = useAuth();
   
   const { data: interviews, isLoading: isLoadingInterviews } = useQuery<any[]>({
-    queryKey: ["/api/interviews"],
+    queryKey: ["/api/interviews", user?.role],
+    staleTime: 0, // Always consider the data stale
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnMount: true, // Refetch when component mounts
   });
   
   const { data: candidates } = useQuery<any[]>({
@@ -51,6 +56,8 @@ export default function Reports() {
         return <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-200">In Progress</Badge>;
       case "completed":
         return <Badge variant="outline" className="bg-purple-100 text-purple-800 hover:bg-purple-200">Completed</Badge>;
+      case "cancelled":
+        return <Badge variant="outline" className="bg-red-100 text-red-800 hover:bg-red-200">Cancelled</Badge>;
       default:
         return <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-200">{status}</Badge>;
     }
@@ -74,7 +81,7 @@ export default function Reports() {
     }
     
     return true;
-  });
+  }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const handleInterviewSelect = (interviewId: number) => {
     setSelectedInterview(interviewId);
@@ -152,6 +159,11 @@ export default function Reports() {
                           <div className="text-sm text-gray-500 mt-1">
                             {getCandidateName(interview.candidateId)} • {formatDate(interview.date)}
                           </div>
+                          {interview.assignee && (
+                            <div className="text-sm text-gray-500 mt-1">
+                              Interviewer: {interview.assignee.name}
+                            </div>
+                          )}
                         </div>
                       ))
                     ) : (

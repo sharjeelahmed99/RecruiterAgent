@@ -23,7 +23,6 @@ export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
-    allowedHosts: true,
   };
 
   const vite = await createViteServer({
@@ -40,9 +39,22 @@ export async function setupVite(app: Express, server: Server) {
     appType: "custom",
   });
 
+  // Add middleware to handle API routes before Vite
+  app.use((req, res, next) => {
+    if (req.path.startsWith("/api")) {
+      return next();
+    }
+    next();
+  });
+
   app.use(vite.middlewares);
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
+
+    // Skip API routes and let Express handle them
+    if (url.startsWith("/api")) {
+      return next('router');
+    }
 
     try {
       const clientTemplate = path.resolve(

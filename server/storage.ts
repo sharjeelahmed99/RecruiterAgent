@@ -16,6 +16,8 @@ import {
   InterviewWithDetails,
   JobPosition,
   InsertJobPosition,
+  JobApplication,
+  InsertJobApplication,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -31,6 +33,7 @@ export interface IStorage {
   // Technology methods
   getTechnologies(): Promise<Technology[]>;
   getTechnology(id: number): Promise<Technology | undefined>;
+  getCandidateTechnologies(candidateId: number): Promise<Technology[]>;
 
   // Experience level methods
   getExperienceLevels(): Promise<ExperienceLevel[]>;
@@ -54,6 +57,7 @@ export interface IStorage {
   createCandidate(candidate: InsertCandidate): Promise<Candidate>;
   updateCandidate(id: number, candidate: Partial<Candidate>): Promise<Candidate | undefined>;
   deleteCandidate(id: number): Promise<boolean>;
+  getCandidateInterviews(candidateId: number): Promise<Interview[]>;
 
   // Interview methods
   getInterviews(): Promise<Interview[]>;
@@ -77,9 +81,16 @@ export interface IStorage {
   deleteJobPosition(id: number): Promise<boolean>;
   getJobPosition(id: number): Promise<JobPosition | undefined>;
 
+  // Job Application methods
+  createJobApplication(application: InsertJobApplication): Promise<JobApplication>;
+  getJobApplications(jobId: number): Promise<JobApplication[]>;
+  getJobApplication(id: number): Promise<JobApplication | undefined>;
+  updateJobApplication(id: number, application: Partial<JobApplication>): Promise<JobApplication | undefined>;
+
   // Specialized methods
   getRandomQuestions(filter: QuestionFilter): Promise<Question[]>;
   generateInterviewSummary(interviewId: number): Promise<Interview | undefined>;
+  initializeData(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -528,6 +539,12 @@ export class MemStorage implements IStorage {
     return this.candidates.delete(id);
   }
 
+  async getCandidateInterviews(candidateId: number): Promise<Interview[]> {
+    return Array.from(this.interviews.values()).filter(
+      interview => interview.candidateId === candidateId
+    );
+  }
+
   // Interview methods
   async getInterviews(): Promise<Interview[]> {
     return Array.from(this.interviews.values());
@@ -544,9 +561,20 @@ export class MemStorage implements IStorage {
   }
 
   async createInterview(interview: InsertInterview): Promise<Interview> {
-    const id = this.interviewId++;
-    const newInterview: Interview = { ...interview, id };
-    this.interviews.set(id, newInterview);
+    const newInterview: Interview = {
+      id: this.interviewId++,
+      ...interview,
+      status: interview.status || "scheduled",
+      notes: interview.notes || "",
+      overallScore: null,
+      technicalScore: null,
+      problemSolvingScore: null,
+      communicationScore: null,
+      recommendation: null,
+      assigneeId: interview.assigneeId || null,
+      createdByAdmin: interview.createdByAdmin || false,
+    };
+    this.interviews.set(newInterview.id, newInterview);
     return newInterview;
   }
 
@@ -659,6 +687,44 @@ export class MemStorage implements IStorage {
     return this.jobPositions.delete(id);
   }
 
+  // Job Application methods
+  async createJobApplication(application: InsertJobApplication): Promise<JobApplication> {
+    const id = this.userId++;
+    const newJobApplication: JobApplication = {
+      ...application,
+      id,
+      status: application.status || 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.users.set(id, newJobApplication);
+    return newJobApplication;
+  }
+
+  async getJobApplications(jobId: number): Promise<JobApplication[]> {
+    return Array.from(this.users.values()).filter(
+      user => user.role === 'hr' && user.jobId === jobId
+    ) as JobApplication[];
+  }
+
+  async getJobApplication(id: number): Promise<JobApplication | undefined> {
+    return this.users.get(id) as JobApplication | undefined;
+  }
+
+  async updateJobApplication(id: number, application: Partial<JobApplication>): Promise<JobApplication | undefined> {
+    const existingJobApplication = this.users.get(id) as JobApplication | undefined;
+    if (!existingJobApplication) return undefined;
+
+    const updatedJobApplication: JobApplication = {
+      ...existingJobApplication,
+      ...application,
+      updatedAt: new Date()
+    };
+
+    this.users.set(id, updatedJobApplication);
+    return updatedJobApplication;
+  }
+
   // Specialized methods
   async getRandomQuestions(filter: QuestionFilter): Promise<Question[]> {
     const filteredQuestions = await this.getFilteredQuestions(filter);
@@ -741,6 +807,16 @@ export class MemStorage implements IStorage {
 
     this.interviews.set(interviewId, updatedInterview);
     return updatedInterview;
+  }
+
+  async initializeData(): Promise<void> {
+    // Implementation of initializeData method
+  }
+
+  async getCandidateTechnologies(candidateId: number): Promise<Technology[]> {
+    // In memory storage doesn't have the candidate_technologies table
+    // So we'll return an empty array for now
+    return [];
   }
 }
 

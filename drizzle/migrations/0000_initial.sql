@@ -25,6 +25,10 @@ CREATE TABLE IF NOT EXISTS "questions" (
   "title" VARCHAR(255) NOT NULL,
   "content" TEXT NOT NULL,
   "answer" TEXT NOT NULL,
+  "evaluates_technical" BOOLEAN NOT NULL DEFAULT FALSE,
+  "evaluates_problem_solving" BOOLEAN NOT NULL DEFAULT FALSE,
+  "evaluates_communication" BOOLEAN NOT NULL DEFAULT FALSE,
+  "is_custom" BOOLEAN NOT NULL DEFAULT FALSE,
   "technology_id" INTEGER NOT NULL REFERENCES "technologies"("id"),
   "experience_level_id" INTEGER NOT NULL REFERENCES "experience_levels"("id"),
   "question_type_id" INTEGER NOT NULL REFERENCES "question_types"("id")

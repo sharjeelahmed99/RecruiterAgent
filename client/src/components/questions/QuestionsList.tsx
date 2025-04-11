@@ -44,12 +44,7 @@ export default function QuestionsList({
     return (
       <div className="bg-white shadow rounded-lg p-6 text-center">
         <p className="text-gray-500 mb-4">No questions available. {onGenerateMore ? "Generate some questions to get started." : ""}</p>
-        {onGenerateMore && (
-          <Button onClick={onGenerateMore} disabled={isGenerating}>
-            <PlusIcon className="mr-2 h-4 w-4" />
-            Generate Questions
-          </Button>
-        )}
+        
       </div>
     );
   }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { FileTextIcon, DownloadIcon, ShareIcon } from "lucide-react";
 import { format } from "date-fns";
 import PdfViewer from "@/components/ui/pdf-viewer";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/hooks/use-auth";
 
 interface InterviewReportProps {
   interview: any;
@@ -16,7 +18,10 @@ interface InterviewReportProps {
 export default function InterviewReport({ interview }: InterviewReportProps) {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [showPdf, setShowPdf] = useState(false);
+  const [hrNotes, setHrNotes] = useState("");
   const { toast } = useToast();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   // Clean up PDF URL when component unmounts
   useEffect(() => {
@@ -26,6 +31,37 @@ export default function InterviewReport({ interview }: InterviewReportProps) {
       }
     };
   }, [pdfUrl]);
+
+  const { mutate: updateHrDecision, isPending: isUpdatingHrDecision } = useMutation({
+    mutationFn: async ({ decision, notes }: { decision: string, notes: string }) => {
+      const response = await apiRequest("PUT", `/api/interviews/${interview.id}/hr-decision`, {
+        decision,
+        notes
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/interviews/${interview.id}/details`] });
+      toast({
+        title: "Decision updated",
+        description: "The HR decision has been updated successfully.",
+        variant: "default",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error updating decision",
+        description: error.message || "Failed to update HR decision.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleHrDecision = (decision: string) => {
+    updateHrDecision({ decision, notes: hrNotes });
+    // Invalidate candidate listing to refresh the list with updated status
+    queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
+  };
 
   const { mutate: generatePdf, isPending } = useMutation({
     mutationFn: async () => {
@@ -162,6 +198,9 @@ export default function InterviewReport({ interview }: InterviewReportProps) {
       case "pass":
         className = "bg-red-100 text-red-800";
         break;
+      case "not_recommended":
+        className = "bg-red-100 text-red-800";
+        break;
       default:
         className = "bg-gray-100 text-gray-800";
     }
@@ -192,6 +231,9 @@ export default function InterviewReport({ interview }: InterviewReportProps) {
           <div className="text-sm text-gray-500 mt-1">
             <p>Candidate: <span className="font-medium">{interview.candidate.name}</span></p>
             <p>Date: <span className="font-medium">{formatDate(interview.date)}</span></p>
+            {interview.assignee && (
+              <p>Interviewer: <span className="font-medium">{interview.assignee.name}</span></p>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -214,6 +256,58 @@ export default function InterviewReport({ interview }: InterviewReportProps) {
             <h4 className="text-sm font-medium text-gray-900 mb-2">Notes</h4>
             <p className="text-sm text-gray-700">{interview.notes || 'No notes provided.'}</p>
           </div>
+
+          {/* HR Decision Section */}
+          {interview.status === "completed" && !interview.hrNotes && (
+            <div className="border-t border-gray-200 pt-4 mt-4">
+              <h4 className="text-sm font-medium text-gray-900 mb-4">HR Decision</h4>
+              <div className="space-y-4">
+                <Textarea
+                  placeholder="Add your notes about the candidate..."
+                  value={hrNotes}
+                  onChange={(e) => setHrNotes(e.target.value)}
+                  className="min-h-[100px]"
+                />
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 bg-red-50 text-red-700 hover:bg-red-100"
+                    onClick={() => handleHrDecision("rejected")}
+                    disabled={isUpdatingHrDecision}
+                  >
+                    Reject Candidate
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 bg-green-50 text-green-700 hover:bg-green-100"
+                    onClick={() => handleHrDecision("accepted")}
+                    disabled={isUpdatingHrDecision}
+                  >
+                    Accept Candidate
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Display HR Decision if made */}
+          {interview.status === "completed" && interview.hrNotes && (
+            <div className="border-t border-gray-200 pt-4 mt-4">
+              <h4 className="text-sm font-medium text-gray-900 mb-2">HR Decision</h4>
+              <div className="flex items-center space-x-2 mb-2">
+                <Badge className={
+                  interview.candidate?.status === "hired" 
+                    ? "bg-green-100 text-green-800" 
+                    : "bg-red-100 text-red-800"
+                }>
+                  {interview.candidate?.status === "hired" 
+                    ? "Accepted" 
+                    : "Rejected"}
+                </Badge>
+              </div>
+              <p className="text-sm text-gray-700">{interview.hrNotes}</p>
+            </div>
+          )}
           
           <div className="flex justify-end mt-6 space-x-2">
             <Button 

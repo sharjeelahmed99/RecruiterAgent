@@ -9,7 +9,9 @@ import {
   insertInterviewQuestionSchema,
   generateInterviewSchema,
   insertJobPositionSchema,
-  USER_ROLES
+  USER_ROLES,
+  Interview,
+  User
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -17,6 +19,7 @@ import { setupAuth, checkRole } from "./auth";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import applicationsRouter from "./routes/applications";
 
 // Configure multer for file uploads
 const uploadsDir = path.join(process.cwd(), 'uploads');
@@ -56,7 +59,7 @@ const upload = multer({
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only PDF, Word documents, and images are allowed.'), false);
+      cb(null, false);
     }
   }
 });
@@ -72,6 +75,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     return res.status(500).json({ message: "Internal server error" });
   };
+
+  // Register the applications router with /api prefix
+  app.use("/api", applicationsRouter);
 
   // GET /api/technologies - Get all technologies
   app.get("/api/technologies", async (_req, res) => {
@@ -212,7 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const candidates = await storage.getCandidates();
       res.json(candidates);
     } catch (err) {
-      res.status(500).json({ message: "Failed to fetch candidates" });
+      res.status(500).json({ message: err instanceof Error ? err.message : "Failed to fetch candidates" });
     }
   });
 
@@ -235,6 +241,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/candidates/:id/interviews - Get candidate's interviews
+  app.get("/api/candidates/:id/interviews", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+
+      const interviews = await storage.getCandidateInterviews(id);
+      res.json(interviews);
+    } catch (err) {
+      console.error("Error fetching candidate interviews:", err);
+      res.status(500).json({ message: "Failed to fetch candidate interviews" });
+    }
+  });
+
   // File upload route for candidate resumes
   app.post("/api/upload/resume", upload.single('resume'), (req, res) => {
     try {
@@ -254,21 +276,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/candidates - Create a new candidate (HR only)
-  app.post("/api/candidates", checkRole([USER_ROLES.HR]), upload.single('resume'), async (req, res) => {
-    try {
-      // Handle file upload data if present
-      const candidateData = {
-        ...req.body,
-        resumeFile: req.file?.path?.replace(process.cwd(), '') || null
-      };
-      const validatedData = insertCandidateSchema.parse(candidateData);
-      const newCandidate = await storage.createCandidate(validatedData);
-      res.status(201).json(newCandidate);
-    } catch (err) {
-      handleZodError(err, res);
+  // POST /api/candidates - Create a new candidate (HR and Admin only)
+  app.post("/api/candidates", 
+    checkRole([USER_ROLES.HR, USER_ROLES.ADMIN]),
+    async (req, res) => {
+      try {
+        console.log('Received candidate data:', req.body);
+        
+        // Only include candidate fields
+        const candidateData = {
+          name: req.body.name,
+          email: req.body.email,
+          phone: req.body.phone,
+          notes: req.body.notes,
+          status: "in_progress" // Set status to in_progress
+        };
+        
+        console.log('Validating candidate data:', candidateData);
+        const validatedData = insertCandidateSchema.parse(candidateData);
+        console.log('Validated data:', validatedData);
+        
+        const newCandidate = await storage.createCandidate(validatedData);
+        console.log('Created candidate:', newCandidate);
+        
+        res.status(201).json(newCandidate);
+      } catch (err) {
+        console.error('Error creating candidate:', err);
+        handleZodError(err, res);
+      }
     }
-  });
+  );
 
   // PUT /api/candidates/:id - Update a candidate
   app.put("/api/candidates/:id", upload.single('resume'), async (req, res) => {
@@ -315,18 +352,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/users - Get all technical interviewers (for assignee dropdown)
-  app.get("/api/users/technical-interviewers", checkRole([USER_ROLES.HR, USER_ROLES.DIRECTOR]), async (_req, res) => {
+  // GET /api/users/technical-interviewers - Get all technical interviewers
+  app.get("/api/users/technical-interviewers", checkRole([USER_ROLES.HR, USER_ROLES.ADMIN]), async (req, res) => {
     try {
-      // Get all users with role TECHNICAL_INTERVIEWER
       const users = await storage.getUsersByRole(USER_ROLES.TECHNICAL_INTERVIEWER);
-      // Return users without password
-      const usersWithoutPassword = users.map(user => {
-        const { password, ...userWithoutPassword } = user;
-        return userWithoutPassword;
+      
+      // Add dummy data for each interviewer
+      const interviewersWithDetails = users.map((user, index) => {
+        // Generate next 14 days for availability
+        const availabilitySlots = [];
+        for (let i = 1; i <= 14; i++) {
+          const date = new Date();
+          date.setDate(date.getDate() + i);
+          
+          // Add 2-3 slots per day randomly
+          const slotsPerDay = Math.floor(Math.random() * 2) + 2;
+          const possibleTimes = ["09:00", "10:30", "13:00", "14:30", "16:00"];
+          
+          for (let j = 0; j < slotsPerDay; j++) {
+            const randomTimeIndex = Math.floor(Math.random() * possibleTimes.length);
+            availabilitySlots.push({
+              date: date.toISOString(),
+              time: possibleTimes[randomTimeIndex],
+              duration: 60
+            });
+            possibleTimes.splice(randomTimeIndex, 1);
+          }
+        }
+
+        // Different tech stacks for different interviewers
+        const techStacks = [
+          [
+            { name: "JavaScript", level: "Expert" },
+            { name: "React", level: "Expert" },
+            { name: "Node.js", level: "Advanced" },
+            { name: "TypeScript", level: "Advanced" }
+          ],
+          [
+            { name: "Python", level: "Expert" },
+            { name: "Django", level: "Expert" },
+            { name: "JavaScript", level: "Intermediate" },
+            { name: "SQL", level: "Advanced" }
+          ],
+          [
+            { name: "Java", level: "Expert" },
+            { name: "Spring", level: "Expert" },
+            { name: "Docker", level: "Advanced" },
+            { name: "Kubernetes", level: "Intermediate" }
+          ],
+          [
+            { name: "TypeScript", level: "Expert" },
+            { name: "Angular", level: "Expert" },
+            { name: "Node.js", level: "Advanced" },
+            { name: "MongoDB", level: "Advanced" }
+          ],
+          [
+            { name: "React", level: "Expert" },
+            { name: "Vue", level: "Expert" },
+            { name: "JavaScript", level: "Expert" },
+            { name: "AWS", level: "Advanced" }
+          ]
+        ];
+
+        // Assign a tech stack based on the user's index
+        const techStackIndex = index % techStacks.length;
+
+        return {
+          ...user,
+          availabilitySlots,
+          techStack: techStacks[techStackIndex],
+          yearsOfExperience: Math.floor(Math.random() * 8) + 3, // 3-10 years of experience
+          totalInterviews: Math.floor(Math.random() * 50) + 20, // 20-70 interviews conducted
+          successRate: Math.floor(Math.random() * 20) + 80, // 80-100% success rate
+          preferredTimeZone: "UTC+0",
+          languages: ["English", "Spanish"].slice(0, Math.floor(Math.random() * 2) + 1),
+          specializations: [
+            "Frontend Development",
+            "Backend Development",
+            "Full Stack Development",
+            "DevOps",
+            "Cloud Architecture"
+          ].slice(0, Math.floor(Math.random() * 3) + 1)
+        };
       });
-      res.json(usersWithoutPassword);
+
+      res.json(interviewersWithDetails);
     } catch (err) {
+      console.error("Error fetching technical interviewers:", err);
       res.status(500).json({ message: "Failed to fetch technical interviewers" });
     }
   });
@@ -334,24 +446,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/interviews - Get all interviews (filtered by role)
   app.get("/api/interviews", async (req, res) => {
     try {
-      let interviews;
+      console.log('Interviews route - Request received');
+      let interviews: Interview[];
+      const user = req.user as User | undefined;
 
-      // If user is HR or Director, return all interviews
-      if (req.user?.role === USER_ROLES.HR || req.user?.role === USER_ROLES.DIRECTOR) {
+      if (!user) {
+        console.log('Interviews route - No user found in request');
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      console.log('Interviews route - User role:', user.role);
+      console.log('Interviews route - User ID:', user.id);
+
+      // If user is Admin, HR or Director, return all interviews
+      if (user.role === USER_ROLES.ADMIN || user.role === USER_ROLES.HR || user.role === USER_ROLES.DIRECTOR) {
+        console.log('Interviews route - Fetching all interviews for admin/HR/director');
         interviews = await storage.getInterviews();
+        console.log('Interviews route - Fetched interviews count:', interviews.length);
       } 
       // If user is Technical Interviewer, return only assigned interviews
-      else if (req.user?.role === USER_ROLES.TECHNICAL_INTERVIEWER) {
-        interviews = await storage.getInterviewsByAssignee(req.user.id);
+      else if (user.role === USER_ROLES.TECHNICAL_INTERVIEWER) {
+        console.log('Interviews route - Fetching assigned interviews for technical interviewer');
+        interviews = await storage.getInterviewsByAssignee(user.id);
+        console.log('Interviews route - Fetched assigned interviews count:', interviews.length);
       }
-      // Default - empty array if not authenticated
+      // Default - empty array for other roles
       else {
+        console.log('Interviews route - No access for role:', user.role);
         interviews = [];
       }
 
       res.json(interviews);
     } catch (err) {
-      res.status(500).json({ message: "Failed to fetch interviews" });
+      console.error('Interviews route - Error details:', err);
+      if (err instanceof Error) {
+        console.error('Interviews route - Error stack:', err.stack);
+      }
+      res.status(500).json({ 
+        message: "Failed to fetch interviews",
+        error: err instanceof Error ? err.message : 'Unknown error'
+      });
     }
   });
 
@@ -393,27 +527,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/interviews - Create a new interview
-  app.post("/api/interviews", async (req, res) => {
-    try {
-      // Handle date conversion explicitly before validation
-      let requestData = { ...req.body };
-      if (requestData.date && !(requestData.date instanceof Date)) {
-        try {
-          // If client sends a Date object that's been stringified during JSON serialization
-          requestData.date = new Date(requestData.date);
-        } catch (dateErr) {
-          return res.status(400).json({ message: "Invalid date format" });
+  // POST /api/interviews - Create a new interview (HR and Admin only)
+  app.post("/api/interviews", 
+    checkRole([USER_ROLES.HR, USER_ROLES.ADMIN]),
+    async (req, res) => {
+      try {
+        console.log('Received interview data:', req.body);
+        
+        // Handle date conversion explicitly before validation
+        let requestData = { ...req.body };
+        if (requestData.date && !(requestData.date instanceof Date)) {
+          try {
+            requestData.date = new Date(requestData.date);
+          } catch (dateErr) {
+            return res.status(400).json({ message: "Invalid date format" });
+          }
         }
-      }
 
-      const interviewData = insertInterviewSchema.parse(requestData);
-      const newInterview = await storage.createInterview(interviewData);
-      res.status(201).json(newInterview);
-    } catch (err) {
-      handleZodError(err, res);
+        const user = req.user as User & { role: string } | undefined;
+        const interviewData = {
+          title: requestData.title,
+          candidateId: requestData.candidateId,
+          date: requestData.date,
+          status: "scheduled",
+          notes: "",
+          assigneeId: requestData.assigneeId || null,
+          createdByAdmin: user?.role === USER_ROLES.ADMIN
+        };
+
+        console.log('Validating interview data:', interviewData);
+        const validatedData = insertInterviewSchema.parse(interviewData);
+        console.log('Validated data:', validatedData);
+        
+        const newInterview = await storage.createInterview(validatedData);
+        console.log('Created interview:', newInterview);
+        
+        res.status(201).json(newInterview);
+      } catch (err) {
+        console.error('Error creating interview:', err);
+        handleZodError(err, res);
+      }
     }
-  });
+  );
 
   // POST /api/interviews/generate - Generate a new interview with questions
   app.post("/api/interviews/generate", async (req, res) => {
@@ -577,6 +732,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update candidate status and add HR notes (HR and Admin only)
+  app.put("/api/interviews/:id/hr-decision", 
+    checkRole([USER_ROLES.HR, USER_ROLES.ADMIN]),
+    async (req, res) => {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid interview ID" });
+      }
+
+      const { decision, notes } = req.body;
+      if (!decision || !["accepted", "rejected"].includes(decision)) {
+        return res.status(400).json({ error: "Invalid decision. Must be 'accepted' or 'rejected'" });
+      }
+
+      try {
+        // Get the interview to find the candidate ID
+        const interview = await storage.getInterview(id);
+        if (!interview) {
+          return res.status(404).json({ error: "Interview not found" });
+        }
+
+        // Update candidate status
+        await storage.updateCandidate(interview.candidateId, {
+          status: decision === "accepted" ? "hired" : "rejected"
+        });
+
+        // Update interview with HR notes and mark as completed
+        const updatedInterview = await storage.updateInterview(id, {
+          status: "completed",
+          hrNotes: notes
+        });
+
+        res.json(updatedInterview);
+      } catch (error) {
+        console.error("Error updating HR decision:", error);
+        res.status(500).json({ error: "Failed to update HR decision" });
+      }
+    }
+  );
+
   // Admin routes for user management
 
   // GET /api/admin/users - Get all users (Admin only)
@@ -670,6 +865,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/job-positions/:id/toggle-active", checkRole([USER_ROLES.HR, USER_ROLES.ADMIN]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+
+      const jobPosition = await storage.getJobPosition(id);
+      if (!jobPosition) {
+        return res.status(404).json({ message: "Job position not found" });
+      }
+
+      const updatedPosition = await storage.updateJobPosition(id, {
+        active: !jobPosition.active
+      });
+
+      if (!updatedPosition) {
+        return res.status(500).json({ message: "Failed to update job position" });
+      }
+
+      res.json(updatedPosition);
+    } catch (err) {
+      console.error("Error toggling job position status:", err);
+      res.status(500).json({ message: "Failed to toggle job position status" });
+    }
+  });
+
   app.post("/api/job-positions", checkRole([USER_ROLES.HR, USER_ROLES.ADMIN]), async (req, res) => {
     try {
       // Parse requirements from string to array if it's a string
@@ -678,7 +900,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requirements: Array.isArray(req.body.requirements) 
           ? req.body.requirements 
           : typeof req.body.requirements === 'string'
-          ? req.body.requirements.split('\n').map(r => r.trim()).filter(Boolean)
+          ? req.body.requirements.split('\n').map((r: string) => r.trim()).filter(Boolean)
           : []
       };
       
